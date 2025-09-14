@@ -1,13 +1,16 @@
 from __future__ import annotations
-import logging
-import voluptuous as vol
-import homeassistant.helpers.config_validation as cv
-from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.config_entries import ConfigEntry
 
-from .const import DOMAIN, CONF_APP_ID, CONF_APP_SECRET, CONF_URL_BASE
-from .token_manager import TokenManager
+import aiohttp
+import logging
+
+import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant, ServiceCall
+
 from .api import ApiClient
+from .const import CONF_APP_ID, CONF_APP_SECRET, CONF_URL_BASE, DOMAIN
+from .token_manager import TokenManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -21,11 +24,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     app_secret = entry.data[CONF_APP_SECRET]
     url_base   = entry.data[CONF_URL_BASE]
 
-    tm  = TokenManager(app_id, app_secret, url_base)
-    api = ApiClient(app_id, app_secret, url_base, tm.get_token, tm.refresh_token)
+    timeout = aiohttp.ClientTimeout(total=10)
+    session = aiohttp.ClientSession(timeout=timeout)
+    tm = TokenManager(app_id, app_secret, url_base, session=session)
+    api = ApiClient(app_id, app_secret, url_base, tm.get_token, tm.refresh_token, session)
 
     hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = {"tm": tm, "api": api}
+    hass.data[DOMAIN][entry.entry_id] = {"tm": tm, "api": api, "session": session}
 
     async def srv_set_position(call: ServiceCall):
         device_id = call.data["device_id"]
@@ -55,5 +60,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id, None)
+        data = hass.data[DOMAIN].pop(entry.entry_id, {})
+        session: aiohttp.ClientSession | None = data.get("session")
+        if session is not None:
+            await session.close()
     return unload_ok

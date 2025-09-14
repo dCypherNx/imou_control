@@ -1,7 +1,9 @@
 from __future__ import annotations
-import uuid
+
 import aiohttp
-from typing import Any, Dict, Callable, Optional, Awaitable
+import uuid
+from typing import Any, Awaitable, Callable, Dict, Optional
+
 from .const import PTZ_LOCATION_ENDPOINT
 from .utils import make_system
 
@@ -17,12 +19,16 @@ class ApiClient:
         base_url: str,
         token_getter: Callable[[], Awaitable[str]],
         token_refresher: Optional[Callable[[], Awaitable[str]]] = None,
-    ):
+        session: aiohttp.ClientSession | None = None,
+    ) -> None:
         self.app_id = app_id
         self.app_secret = app_secret
         self.base_url = base_url.rstrip("/")
         self._get_token = token_getter
         self._refresh_token = token_refresher
+        timeout = aiohttp.ClientTimeout(total=10)
+        self._session = session or aiohttp.ClientSession(timeout=timeout)
+        self._owns_session = session is None
 
     def _url(self, path: str) -> str:
         return f"{self.base_url}{path}"
@@ -54,13 +60,11 @@ class ApiClient:
             "params": params,
         }
 
-        timeout = aiohttp.ClientTimeout(total=10)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.post(self._url(path), json=payload) as resp:
-                resp.raise_for_status()
-                if resp.content_length:
-                    return await resp.json(content_type=None)
-                return {}
+        async with self._session.post(self._url(path), json=payload) as resp:
+            resp.raise_for_status()
+            if resp.content_length:
+                return await resp.json(content_type=None)
+            return {}
 
     async def _call_with_retry(
         self,
@@ -111,6 +115,11 @@ class ApiClient:
         data = await self._call_with_retry(PTZ_LOCATION_ENDPOINT, params, include_token=True)
         # sucesso já garantido por _call_with_retry (code == "0")
         return True
+
+    async def async_close(self) -> None:
+        """Fecha a sessão HTTP se ela foi criada internamente."""
+        if self._owns_session:
+            await self._session.close()
 
     # Exemplo de uso genérico (se precisar depois):
     # def call_any(self, path: str, params: Dict[str, Any], require_token: bool = True) -> Dict[str, Any]:

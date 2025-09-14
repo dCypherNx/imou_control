@@ -4,9 +4,9 @@ import pytest
 class DummyResp:
     def __init__(self, token: str):
         self._token = token
-        self.content = b"1"
+        self.content_length = 1
 
-    def json(self):
+    async def json(self, content_type=None):  # pragma: no cover - simple stub
         return {
             "result": {
                 "code": "0",
@@ -14,35 +14,43 @@ class DummyResp:
             }
         }
 
-    def raise_for_status(self):
+    def raise_for_status(self):  # pragma: no cover - always OK
+        pass
+
+    async def __aenter__(self):  # pragma: no cover - simple stub
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):  # pragma: no cover - simple stub
         pass
 
 
-def test_get_token_caches(monkeypatch, token_module):
-    calls = []
+class DummySession:
+    def __init__(self, tokens):
+        self._tokens = list(tokens)
+        self.calls = 0
 
-    def fake_post(url, json, timeout):
-        calls.append(1)
-        return DummyResp("abc")
+    def post(self, url, json):  # pragma: no cover - behaviour tested indirectly
+        token = self._tokens.pop(0)
+        self.calls += 1
+        return DummyResp(token)
 
-    monkeypatch.setattr(token_module.requests, "post", fake_post)
-    tm = token_module.TokenManager("id", "secret", "http://host")
-    t1 = tm.get_token()
-    t2 = tm.get_token()
+
+@pytest.mark.asyncio
+async def test_get_token_caches(token_module):
+    session = DummySession(["abc"])
+    tm = token_module.TokenManager("id", "secret", "http://host", session=session)
+    t1 = await tm.get_token()
+    t2 = await tm.get_token()
     assert t1 == t2 == "abc"
-    assert len(calls) == 1
+    assert session.calls == 1
 
 
-def test_refresh_and_invalidate(monkeypatch, token_module):
-    tokens = ["first", "second", "third"]
-
-    def fake_post(url, json, timeout):
-        return DummyResp(tokens.pop(0))
-
-    monkeypatch.setattr(token_module.requests, "post", fake_post)
-    tm = token_module.TokenManager("id", "secret", "http://host")
-    assert tm.get_token() == "first"
-    assert tm.refresh_token() == "second"
+@pytest.mark.asyncio
+async def test_refresh_and_invalidate(token_module):
+    session = DummySession(["first", "second", "third"])
+    tm = token_module.TokenManager("id", "secret", "http://host", session=session)
+    assert await tm.get_token() == "first"
+    assert await tm.refresh_token() == "second"
     tm.invalidate()
-    assert tm.get_token() == "third"
-    assert tokens == []
+    assert await tm.get_token() == "third"
+    assert session._tokens == []

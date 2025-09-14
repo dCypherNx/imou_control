@@ -1,6 +1,10 @@
 from __future__ import annotations
-import time, uuid, aiohttp
-from typing import Optional, Tuple, Dict, Any
+
+import aiohttp
+import time
+import uuid
+from typing import Any, Dict, Optional, Tuple
+
 from .const import TOKEN_ENDPOINT
 from .utils import make_system
 
@@ -8,12 +12,21 @@ from .utils import make_system
 class TokenManager:
     """Gerencia o accessToken (cache + renovação) para a Imou OpenAPI."""
 
-    def __init__(self, app_id: str, app_secret: str, base_url: str):
+    def __init__(
+        self,
+        app_id: str,
+        app_secret: str,
+        base_url: str,
+        session: aiohttp.ClientSession | None = None,
+    ) -> None:
         self._app_id = app_id
         self._app_secret = app_secret
         self._base_url = base_url.rstrip("/")
         self._token: Optional[str] = None
         self._exp_ts: float = 0.0  # epoch seconds
+        timeout = aiohttp.ClientTimeout(total=10)
+        self._session = session or aiohttp.ClientSession(timeout=timeout)
+        self._owns_session = session is None
 
     def _url(self, path: str) -> str:
         return f"{self._base_url}{path}"
@@ -33,11 +46,9 @@ class TokenManager:
             "id": str(uuid.uuid4()),
             "params": {},
         }
-        timeout = aiohttp.ClientTimeout(total=10)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.post(self._url(TOKEN_ENDPOINT), json=payload) as resp:
-                resp.raise_for_status()
-                data = await resp.json(content_type=None) if resp.content_length else {}
+        async with self._session.post(self._url(TOKEN_ENDPOINT), json=payload) as resp:
+            resp.raise_for_status()
+            data = await resp.json(content_type=None) if resp.content_length else {}
 
         result = data.get("result") or {}
         code = str(result.get("code", ""))
@@ -73,4 +84,9 @@ class TokenManager:
         """Invalida o token atual (próxima get_token() renova)."""
         self._token = None
         self._exp_ts = 0.0
+
+    async def async_close(self) -> None:
+        """Fecha a sessão HTTP se ela foi criada internamente."""
+        if self._owns_session:
+            await self._session.close()
 
