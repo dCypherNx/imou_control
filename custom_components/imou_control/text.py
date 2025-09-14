@@ -14,22 +14,15 @@ class ImouPresetText(TextEntity):
         self._data = data
         self._attr_should_poll = False
         self._attr_mode = TextMode.TEXT
-
-    @property
-    def name(self) -> str:
-        return f"{self._data['name']} Preset Name"
-
-    @property
-    def unique_id(self) -> str:
-        return f"{self._device_id}_preset_name"
+        self._attr_unique_id = f"{self._device_id}_preset_name"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, self._device_id)})
+        self._attr_has_entity_name = False
+        self._attr_translation_key = "preset_name"
+        self._attr_translation_placeholders = {"device": data["name"]}
 
     @property
     def native_value(self) -> str | None:
         return self._data.get("preset_name", "")
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        return DeviceInfo(identifiers={(DOMAIN, self._device_id)})
 
     async def async_set_value(self, value: str) -> None:
         self._data["preset_name"] = value

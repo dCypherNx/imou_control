@@ -14,29 +14,22 @@ class ImouPresetSelect(SelectEntity):
         self._data = data
         self._attr_should_poll = False
         self._attr_options = list(data["presets"].keys())
-
-    @property
-    def name(self) -> str:
-        return f"{self._data['name']} Presets"
-
-    @property
-    def unique_id(self) -> str:
-        return f"{self._device_id}_presets"
+        self._attr_unique_id = f"{self._device_id}_presets"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, self._device_id)})
+        self._attr_has_entity_name = False
+        self._attr_translation_key = "presets"
+        self._attr_translation_placeholders = {"device": data["name"]}
 
     @property
     def current_option(self) -> str | None:
         return self._data.get("last_preset")
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        return DeviceInfo(identifiers={(DOMAIN, self._device_id)})
 
     async def async_select_option(self, option: str) -> None:
         await self._hass.services.async_call(
             DOMAIN,
             "call_preset",
             {"device": self._device_id, "preset": option},
-            context=self.context,
+            context=self._context,
         )
         self._data["last_preset"] = option
         self.async_write_ha_state()

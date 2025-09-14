@@ -14,12 +14,13 @@ class ImouAxisNumber(NumberEntity):
         self._axis = axis
         self._data = data
         self._attr_should_poll = False
-        self._attr_mode = NumberMode.SLIDER
-
-        axis_name = {"h": "Horizontal", "v": "Vertical"}.get(axis, axis)
-        self._attr_name = f"{data['name']} {axis_name}"
+        self._attr_mode = NumberMode.BOX | NumberMode.SLIDER
         self._attr_unique_id = f"{device_id}_{axis}"
         self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, device_id)})
+        self._attr_has_entity_name = False
+        key = "horizontal" if axis == "h" else "vertical"
+        self._attr_translation_key = key
+        self._attr_translation_placeholders = {"device": data["name"]}
 
         self._attr_native_min_value = -1.0
         self._attr_native_max_value = 1.0
@@ -30,6 +31,7 @@ class ImouAxisNumber(NumberEntity):
         self._data["coords"][self._axis] = float(value)
         self._attr_native_value = float(value)
         self.async_write_ha_state()
+
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
