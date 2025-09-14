@@ -9,5 +9,5 @@
   "issue_tracker": "https://github.com/<user>/<repo>/issues",
   "iot_class": "cloud_polling",
   "loggers": ["custom_components.imou_control"],
-  "platforms": []
+  "platforms": ["select"]
 }
