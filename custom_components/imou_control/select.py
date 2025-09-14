@@ -4,7 +4,8 @@ from typing import List
 from homeassistant.components.select import SelectEntity
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.core import callback
-from . import DOMAIN
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from .const import DOMAIN, SIGNAL_NEW_DEVICE
 
 async def async_setup_entry(hass, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
@@ -14,6 +15,16 @@ async def async_setup_entry(hass, entry, async_add_entities):
     for d in devices:
         entities.append(ImouCameraPresetSelect(entry, d))
     async_add_entities(entities, True)
+
+    @callback
+    def _async_new_device(entry_id, device):
+        if entry_id != entry.entry_id:
+            return
+        async_add_entities([ImouCameraPresetSelect(entry, device)])
+
+    data["unsub_dispatcher"] = async_dispatcher_connect(
+        hass, SIGNAL_NEW_DEVICE, _async_new_device
+    )
 
 class ImouCameraPresetSelect(SelectEntity):
     _attr_icon = "mdi:format-list-numbered"

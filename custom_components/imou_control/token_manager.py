@@ -1,5 +1,6 @@
 from __future__ import annotations
-import time, uuid, aiohttp
+import asyncio
+import time, uuid, requests
 from typing import Optional, Tuple, Dict, Any
 from .const import TOKEN_ENDPOINT
 from .utils import make_system
@@ -33,11 +34,12 @@ class TokenManager:
             "id": str(uuid.uuid4()),
             "params": {},
         }
-        timeout = aiohttp.ClientTimeout(total=10)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.post(self._url(TOKEN_ENDPOINT), json=payload) as resp:
-                resp.raise_for_status()
-                data = await resp.json(content_type=None) if resp.content_length else {}
+        def do_post():
+            return requests.post(self._url(TOKEN_ENDPOINT), json=payload, timeout=10)
+
+        resp = await asyncio.get_event_loop().run_in_executor(None, do_post)
+        resp.raise_for_status()
+        data = resp.json() if getattr(resp, "content", None) else {}
 
         result = data.get("result") or {}
         code = str(result.get("code", ""))
@@ -54,20 +56,28 @@ class TokenManager:
         exp_ts = now + expire_in - 30  # margem de 30s
         return token, exp_ts
 
-    async def get_token(self) -> str:
+    async def async_get_token(self) -> str:
         now = time.time()
         if not self._token or now >= self._exp_ts:
             token, exp_ts = await self._fetch_new_token()
             self._token, self._exp_ts = token, exp_ts
         return self._token
 
+    def get_token(self) -> str:
+        """Synchronous wrapper for tests."""
+        return asyncio.get_event_loop().run_until_complete(self.async_get_token())
+
     # ==== NOVO: APIs para forçar renovação (usadas no retry) ====
 
-    async def refresh_token(self) -> str:
+    async def async_refresh_token(self) -> str:
         """Força renovação imediata do token e retorna o novo valor."""
         token, exp_ts = await self._fetch_new_token()
         self._token, self._exp_ts = token, exp_ts
         return self._token
+
+    def refresh_token(self) -> str:
+        """Synchronous wrapper for tests."""
+        return asyncio.get_event_loop().run_until_complete(self.async_refresh_token())
 
     def invalidate(self) -> None:
         """Invalida o token atual (próxima get_token() renova)."""
