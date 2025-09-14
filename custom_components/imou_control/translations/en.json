@@ -1,18 +1,18 @@
 {
   "entity": {
     "button": {
-      "move": {"name": "Move"},
-      "save_preset": {"name": "Save Preset"}
+      "move": {"name": "Imou 3 Move"},
+      "save_preset": {"name": "Imou 4 Save Preset"}
     },
     "number": {
-      "horizontal": {"name": "Horizontal"},
-      "vertical": {"name": "Vertical"}
+      "horizontal": {"name": "Imou 1 Horizontal"},
+      "vertical": {"name": "Imou 2 Vertical"}
     },
     "select": {
-      "presets": {"name": "Presets"}
+      "presets": {"name": "Imou 5 Presets"}
     },
     "text": {
-      "preset_name": {"name": "Preset Name"}
+      "preset_name": {"name": "Imou Preset Name"}
     }
   }
 }

@@ -20,7 +20,7 @@ class ImouPresetText(TextEntity):
             manufacturer="Imou",
             name=data["name"],
         )
-        self._attr_has_entity_name = True
+        self._attr_has_entity_name = False
         self._attr_translation_key = "preset_name"
 
     @property

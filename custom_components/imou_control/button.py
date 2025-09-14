@@ -20,7 +20,7 @@ class ImouMoveButton(ButtonEntity):
             manufacturer="Imou",
             name=data["name"],
         )
-        self._attr_has_entity_name = True
+        self._attr_has_entity_name = False
         self._attr_translation_key = "move"
 
     async def async_press(self) -> None:
@@ -44,7 +44,7 @@ class ImouSavePresetButton(ButtonEntity):
             manufacturer="Imou",
             name=data["name"],
         )
-        self._attr_has_entity_name = True
+        self._attr_has_entity_name = False
         self._attr_translation_key = "save_preset"
 
     async def async_press(self) -> None:

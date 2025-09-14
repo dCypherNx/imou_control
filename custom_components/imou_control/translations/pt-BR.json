@@ -1,18 +1,18 @@
 {
   "entity": {
     "button": {
-      "move": {"name": "Mover"},
-      "save_preset": {"name": "Salvar Predefinição"}
+      "move": {"name": "Imou 3 Mover"},
+      "save_preset": {"name": "Imou 4 Salvar Predefinição"}
     },
     "number": {
-      "horizontal": {"name": "Horizontal"},
-      "vertical": {"name": "Vertical"}
+      "horizontal": {"name": "Imou 1 Horizontal"},
+      "vertical": {"name": "Imou 2 Vertical"}
     },
     "select": {
-      "presets": {"name": "Predefinições"}
+      "presets": {"name": "Imou 5 Predefinições"}
     },
     "text": {
-      "preset_name": {"name": "Nome do Preset"}
+      "preset_name": {"name": "Imou Nome do Preset"}
     }
   }
 }

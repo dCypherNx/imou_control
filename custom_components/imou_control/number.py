@@ -21,7 +21,7 @@ class ImouAxisNumber(NumberEntity):
             manufacturer="Imou",
             name=data["name"],
         )
-        self._attr_has_entity_name = True
+        self._attr_has_entity_name = False
         key = "horizontal" if axis == "h" else "vertical"
         self._attr_translation_key = key
 
