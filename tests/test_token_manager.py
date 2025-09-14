@@ -54,4 +54,3 @@ async def test_refresh_and_invalidate(token_module):
     tm.invalidate()
     assert await tm.async_get_token() == "third"
     assert session._tokens == []
-

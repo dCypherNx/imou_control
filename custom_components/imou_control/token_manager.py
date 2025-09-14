@@ -31,14 +31,7 @@ class TokenManager:
         return f"{self._base_url}{path}"
 
     async def _fetch_new_token(self) -> Tuple[str, float]:
-        """
-        Faz POST em /openapi/accessToken com 'system' assinado (sign/nonce/time).
-        Resposta esperada:
-        {
-          "result": {"code":"0","msg":"...","data":{"accessToken":"...","expireTime":259176}},
-          "id":"..."
-        }
-        """
+        """Obtem um novo token via /openapi/accessToken."""
         system, now, _nonce = make_system(self._app_id, self._app_secret)
         payload: Dict[str, Any] = {
             "system": system,
@@ -75,7 +68,7 @@ class TokenManager:
         """Synchronous wrapper for tests."""
         return asyncio.get_event_loop().run_until_complete(self.async_get_token())
 
-    # ==== NOVO: APIs para forçar renovação (usadas no retry) ====
+    # ==== APIs para forçar renovação (usadas no retry) ====
 
     async def async_refresh_token(self) -> str:
         """Força renovação imediata do token e retorna o novo valor."""
@@ -91,6 +84,3 @@ class TokenManager:
         """Invalida o token atual (próxima get_token() renova)."""
         self._token = None
         self._exp_ts = 0.0
-
-
-

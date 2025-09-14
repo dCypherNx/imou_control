@@ -15,7 +15,6 @@ async def _maybe_await(func):
         return await result
     return result
 
-
 # Códigos de erro que indicam token inválido/expirado
 _RETRY_TOKEN_CODES = {"TK1002"}
 
@@ -128,8 +127,3 @@ class ApiClient:
         return asyncio.get_event_loop().run_until_complete(
             self.async_set_position(device_id, h, v, z)
         )
-
-    # Exemplo de uso genérico (se precisar depois):
-    # def call_any(self, path: str, params: Dict[str, Any], require_token: bool = True) -> Dict[str, Any]:
-    #     return self._call_with_retry(path, params, include_token=require_token)
-

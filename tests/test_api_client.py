@@ -72,4 +72,3 @@ async def test_failure_raises(api_module):
     )
     with pytest.raises(RuntimeError):
         await api.async_set_position("dev", 0, 0, 0)
-

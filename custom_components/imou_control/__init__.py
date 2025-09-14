@@ -23,13 +23,15 @@ _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = ["select"]
 
-async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+
+def async_setup(hass: HomeAssistant, config: dict) -> bool:
     return True
 
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    app_id     = entry.data[CONF_APP_ID]
+    app_id = entry.data[CONF_APP_ID]
     app_secret = entry.data[CONF_APP_SECRET]
-    url_base   = entry.data[CONF_URL_BASE]
+    url_base = entry.data[CONF_URL_BASE]
 
     session = async_create_clientsession(hass)
     tm = TokenManager(app_id, app_secret, url_base, session)
@@ -67,7 +69,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             ok = await api.async_set_position(device_id, h, v, z)
             if not ok:
                 _LOGGER.warning("set_position retornou False para %s", device_id)
-        except Exception as e:
+        except Exception as e:  # pragma: no cover - defensive log
             _LOGGER.exception("Falha em set_position para %s: %s", device_id, e)
             raise
 
@@ -106,8 +108,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             }
         ),
     )
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
+
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
