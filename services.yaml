@@ -1,0 +1,16 @@
+control_camera:
+  name: Controlar câmera (PTZ absoluto)
+  description: Move a câmera para a posição absoluta por h/v/z usando a API da Imou.
+  fields:
+    device_id:
+      description: Device ID da câmera na Imou
+      example: 5250FACPBV99ADE
+    h:
+      description: Posição horizontal (-1..1, conforme sua API)
+      example: -0.60
+    v:
+      description: Posição vertical (-1..1, conforme sua API)
+      example: 0.15
+    z:
+      description: Zoom (se aplicável)
+      example: 0
