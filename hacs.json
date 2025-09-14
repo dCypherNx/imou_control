@@ -1,0 +1,6 @@
+{
+  "name": "Imou Control",
+  "render_readme": true,
+  "domains": ["imou_control"],
+  "content_in_root": false
+}
