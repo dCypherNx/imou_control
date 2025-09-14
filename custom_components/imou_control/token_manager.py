@@ -1,8 +1,9 @@
 from __future__ import annotations
-import time, uuid, requests
+import time, uuid, aiohttp
 from typing import Optional, Tuple, Dict, Any
-from . import TOKEN_ENDPOINT
+from .const import TOKEN_ENDPOINT
 from .utils import make_system
+
 
 class TokenManager:
     """Gerencia o accessToken (cache + renovação) para a Imou OpenAPI."""
@@ -17,7 +18,7 @@ class TokenManager:
     def _url(self, path: str) -> str:
         return f"{self._base_url}{path}"
 
-    def _fetch_new_token(self) -> Tuple[str, float]:
+    async def _fetch_new_token(self) -> Tuple[str, float]:
         """
         Faz POST em /openapi/accessToken com 'system' assinado (sign/nonce/time).
         Resposta esperada:
@@ -30,11 +31,13 @@ class TokenManager:
         payload: Dict[str, Any] = {
             "system": system,
             "id": str(uuid.uuid4()),
-            "params": {}
+            "params": {},
         }
-        resp = requests.post(self._url(TOKEN_ENDPOINT), json=payload, timeout=10)
-        resp.raise_for_status()
-        data = resp.json() if resp.content else {}
+        timeout = aiohttp.ClientTimeout(total=10)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.post(self._url(TOKEN_ENDPOINT), json=payload) as resp:
+                resp.raise_for_status()
+                data = await resp.json(content_type=None) if resp.content_length else {}
 
         result = data.get("result") or {}
         code = str(result.get("code", ""))
@@ -51,18 +54,18 @@ class TokenManager:
         exp_ts = now + expire_in - 30  # margem de 30s
         return token, exp_ts
 
-    def get_token(self) -> str:
+    async def get_token(self) -> str:
         now = time.time()
         if not self._token or now >= self._exp_ts:
-            token, exp_ts = self._fetch_new_token()
+            token, exp_ts = await self._fetch_new_token()
             self._token, self._exp_ts = token, exp_ts
         return self._token
 
     # ==== NOVO: APIs para forçar renovação (usadas no retry) ====
 
-    def refresh_token(self) -> str:
+    async def refresh_token(self) -> str:
         """Força renovação imediata do token e retorna o novo valor."""
-        token, exp_ts = self._fetch_new_token()
+        token, exp_ts = await self._fetch_new_token()
         self._token, self._exp_ts = token, exp_ts
         return self._token
 
@@ -70,3 +73,4 @@ class TokenManager:
         """Invalida o token atual (próxima get_token() renova)."""
         self._token = None
         self._exp_ts = 0.0
+

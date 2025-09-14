@@ -31,7 +31,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         v = float(call.data["v"])
         z = float(call.data.get("z", 0.0))
         try:
-            ok = await hass.async_add_executor_job(api.set_position, device_id, h, v, z)
+            ok = await api.set_position(device_id, h, v, z)
             if not ok:
                 _LOGGER.warning("set_position retornou False para %s", device_id)
         except Exception as e:
