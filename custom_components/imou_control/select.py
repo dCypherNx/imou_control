@@ -4,7 +4,7 @@ from typing import List
 from homeassistant.components.select import SelectEntity
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.core import callback
-from .const import DOMAIN
+from . import DOMAIN
 
 async def async_setup_entry(hass, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]

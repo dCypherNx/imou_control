@@ -1,7 +1,7 @@
 from __future__ import annotations
 import time, uuid, requests
 from typing import Optional, Tuple, Dict, Any
-from .const import TOKEN_ENDPOINT
+from . import TOKEN_ENDPOINT
 from .utils import make_system
 
 class TokenManager:

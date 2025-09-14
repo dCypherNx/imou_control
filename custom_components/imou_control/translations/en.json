@@ -1,0 +1,34 @@
+{
+  "title": "Imou Control",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Imou Control",
+        "description": "Enter your Imou OpenAPI credentials.",
+        "data": {
+          "app_id": "App ID",
+          "app_secret": "App Secret",
+          "url_base": "API base URL (e.g., https://openapi-or.easy4ip.com)"
+        }
+      }
+    },
+    "error": {
+      "unexpected_error": "Unexpected error"
+    },
+    "abort": {
+      "single_instance_allowed": "Only one instance is allowed"
+    }
+  },
+  "services": {
+    "set_position": {
+      "name": "Set absolute PTZ position",
+      "description": "Moves the camera using Imou OpenAPI (absolute h/v/z).",
+      "fields": {
+        "device_id": { "name": "Device ID" },
+        "h": { "name": "Horizontal (h)" },
+        "v": { "name": "Vertical (v)" },
+        "z": { "name": "Zoom (z)" }
+      }
+    }
+  }
+}
