@@ -1,5 +1,5 @@
-control_camera:
-  name: Controlar câmera (PTZ absoluto)
+set_position:
+  name: Definir posição (PTZ absoluto)
   description: Move a câmera para a posição absoluta por h/v/z usando a API da Imou.
   fields:
     device_id:
@@ -12,5 +12,5 @@ control_camera:
       description: Posição vertical (-1..1, conforme sua API)
       example: 0.15
     z:
-      description: Zoom (se aplicável)
+      description: Zoom (opcional; padrão 0)
       example: 0

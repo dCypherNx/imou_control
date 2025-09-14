@@ -1,6 +1,6 @@
 ## Imou Control
 
-Controla câmeras Imou via OpenAPI (PTZ absoluto).  
+Controla câmeras Imou via OpenAPI (PTZ absoluto).
 Status atual: `set_position`.
 
 - Renovação automática de token (`TK1002`/`TK1402`)
