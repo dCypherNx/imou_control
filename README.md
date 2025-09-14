@@ -2,6 +2,13 @@
 
 Integração personalizada para controlar câmeras Imou no Home Assistant.
 
+Após configurar as credenciais, a integração consulta a conta na nuvem e
+registra automaticamente todas as câmeras encontradas. Para cada dispositivo são
+criadas entidades numéricas para os eixos **H** e **V**, permitindo testar
+posicionamentos diretamente pela UI antes de salvar um preset. Os presets
+definidos ficam disponíveis em uma entidade *select* e podem ser acionados
+diretamente nela ou via serviço.
+
 ## Serviços disponíveis
 
 ### `imou_control.set_position`
@@ -13,4 +20,6 @@ Registra localmente um preset (nome e h/v/z) para um dispositivo específico.
 ### `imou_control.call_preset`
 Posiciona a câmera em um preset previamente definido. Se o preset solicitado já
 for o último executado para o dispositivo, nenhum comando é enviado à nuvem
-para evitar consumo da cota mensal.
+para evitar consumo da cota mensal. Um evento `imou_control_preset_called` é
+emitido sempre que um preset é acionado, permitindo visualizar no histórico quem
+executou o comando.

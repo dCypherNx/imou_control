@@ -1,8 +1,8 @@
 from __future__ import annotations
 import uuid
 import requests
-from typing import Any, Dict, Callable, Optional, Tuple
-from .const import PTZ_LOCATION_ENDPOINT
+from typing import Any, Dict, Callable, Optional, Tuple, List
+from .const import PTZ_LOCATION_ENDPOINT, DEVICE_LIST_ENDPOINT
 from .utils import make_system
 
 # Códigos de erro que indicam token inválido/expirado
@@ -105,6 +105,12 @@ class ApiClient:
         data = self._call_with_retry(PTZ_LOCATION_ENDPOINT, params, include_token=True)
         # sucesso já garantido por _call_with_retry (code == "0")
         return True
+
+    def list_devices(self) -> List[Dict[str, Any]]:
+        """Obtém a lista de dispositivos vinculados à conta Imou."""
+        data = self._call_with_retry(DEVICE_LIST_ENDPOINT, {}, include_token=True)
+        result = data.get("result") or {}
+        return result.get("data", [])
 
     # Exemplo de uso genérico (se precisar depois):
     # def call_any(self, path: str, params: Dict[str, Any], require_token: bool = True) -> Dict[str, Any]:
