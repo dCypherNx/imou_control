@@ -4,9 +4,9 @@
   "version": "0.0.3",
   "config_flow": true,
   "requirements": ["aiohttp>=3.8.0"],
-  "codeowners": ["@<seu-usuario-github>"],
-  "documentation": "https://github.com/<user>/<repo>#readme",
-  "issue_tracker": "https://github.com/<user>/<repo>/issues",
+  "codeowners": ["@dCypherNx"],
+  "documentation": "https://github.com/dCypherNx/imou_control#readme",
+  "issue_tracker": "https://github.com/dCypherNx/imou_control/issues",
   "iot_class": "cloud_polling",
   "loggers": ["custom_components.imou_control"],
   "platforms": ["select"]

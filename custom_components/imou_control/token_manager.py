@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import aiohttp
 import time
 import uuid
@@ -63,20 +64,28 @@ class TokenManager:
         exp_ts = now + expire_in - 30  # margem de 30s
         return token, exp_ts
 
-    async def get_token(self) -> str:
+    async def async_get_token(self) -> str:
         now = time.time()
         if not self._token or now >= self._exp_ts:
             token, exp_ts = await self._fetch_new_token()
             self._token, self._exp_ts = token, exp_ts
         return self._token
 
+    def get_token(self) -> str:
+        """Synchronous wrapper for tests."""
+        return asyncio.get_event_loop().run_until_complete(self.async_get_token())
+
     # ==== NOVO: APIs para forçar renovação (usadas no retry) ====
 
-    async def refresh_token(self) -> str:
+    async def async_refresh_token(self) -> str:
         """Força renovação imediata do token e retorna o novo valor."""
         token, exp_ts = await self._fetch_new_token()
         self._token, self._exp_ts = token, exp_ts
         return self._token
+
+    def refresh_token(self) -> str:
+        """Synchronous wrapper for tests."""
+        return asyncio.get_event_loop().run_until_complete(self.async_refresh_token())
 
     def invalidate(self) -> None:
         """Invalida o token atual (próxima get_token() renova)."""

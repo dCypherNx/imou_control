@@ -1,12 +1,12 @@
 import pytest
 
 
-class DummyResp:
+class FakeResponse:
     def __init__(self, data):
         self._data = data
         self.content_length = 1
 
-    async def json(self, content_type=None):  # pragma: no cover - simple stub
+    async def json(self, content_type=None):
         return self._data
 
     def raise_for_status(self):  # pragma: no cover - always OK
@@ -31,7 +31,7 @@ class DummySession:
             data = {"result": {"code": "TK1002", "msg": "bad"}}
         else:
             data = {"result": {"code": "0", "data": {}}}
-        return DummyResp(data)
+        return FakeResponse(data)
 
 
 @pytest.mark.asyncio
@@ -48,27 +48,28 @@ async def test_retry_on_token_error(api_module):
         return token
 
     api = api_module.ApiClient(
-        "id", "sec", "http://host", get_token, session, refresh_token
+        "id",
+        "sec",
+        "http://host",
+        get_token,
+        session,
+        refresh_token,
     )
-    assert await api.set_position("dev", 0.1, 0.2, 0.3)
+    assert await api.async_set_position("dev", 0.1, 0.2, 0.3)
     assert session.tokens == ["t1", "t2"]
+
+
+class FailSession:
+    def post(self, url, json):  # pragma: no cover - behaviour tested indirectly
+        data = {"result": {"code": "123", "msg": "fail"}}
+        return FakeResponse(data)
 
 
 @pytest.mark.asyncio
 async def test_failure_raises(api_module):
-    class FailSession:
-        def post(self, url, json):
-            data = {"result": {"code": "123", "msg": "fail"}}
-            return DummyResp(data)
-
-    async def get_token():
-        return "tok"
-
-    async def refresh_token():
-        return "tok2"
-
     api = api_module.ApiClient(
-        "id", "sec", "http://host", get_token, FailSession(), refresh_token
+        "id", "sec", "http://host", lambda: "tok", FailSession(), lambda: "tok2"
     )
     with pytest.raises(RuntimeError):
-        await api.set_position("dev", 0, 0, 0)
+        await api.async_set_position("dev", 0, 0, 0)
+

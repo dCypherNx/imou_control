@@ -14,3 +14,17 @@ set_position:
     z:
       description: Zoom (opcional; padrão 0)
       example: 0
+
+register_device:
+  name: Registrar dispositivo
+  description: Adiciona manualmente um dispositivo à integração.
+  fields:
+    device_id:
+      description: Device ID da câmera na Imou
+      example: 5250FACPBV99ADE
+    name:
+      description: Nome amigável (opcional)
+      example: Sala
+    model:
+      description: Modelo da câmera (opcional)
+      example: IPC-A22EP

@@ -1,11 +1,20 @@
 from __future__ import annotations
 
+import asyncio
 import aiohttp
 import uuid
-from typing import Any, Awaitable, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from .const import PTZ_LOCATION_ENDPOINT
 from .utils import make_system
+
+
+async def _maybe_await(func):
+    result = func()
+    if asyncio.iscoroutine(result):
+        return await result
+    return result
+
 
 # Códigos de erro que indicam token inválido/expirado
 _RETRY_TOKEN_CODES = {"TK1002"}
@@ -17,9 +26,9 @@ class ApiClient:
         app_id: str,
         app_secret: str,
         base_url: str,
-        token_getter: Callable[[], Awaitable[str]],
+        token_getter: Callable[[], Any],
         session: aiohttp.ClientSession,
-        token_refresher: Optional[Callable[[], Awaitable[str]]] = None,
+        token_refresher: Optional[Callable[[], Any]] = None,
     ) -> None:
         self.app_id = app_id
         self.app_secret = app_secret
@@ -38,17 +47,18 @@ class ApiClient:
         include_token: bool = True,
         token_override: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """
-        Executa UMA chamada à OpenAPI com system assinado.
-        Se include_token=True, injeta token em params['token'].
-        Retorna o JSON (dict) da resposta já convertido.
-        """
+        """Executa UMA chamada à OpenAPI com system assinado."""
+
         # novo bloco 'system' a cada tentativa
         system, _ts, _nonce = make_system(self.app_id, self.app_secret)
 
         # injeta token dentro de params quando necessário (padrão dos métodos Imou)
         if include_token:
-            token = token_override if token_override is not None else await self._get_token()
+            token = (
+                token_override
+                if token_override is not None
+                else await _maybe_await(self._get_token)
+            )
             params = dict(params)  # cópia
             params["token"] = token
 
@@ -70,9 +80,8 @@ class ApiClient:
         params: Dict[str, Any],
         include_token: bool = True,
     ) -> Dict[str, Any]:
-        """
-        Chama o endpoint e, se retornar TK1002, renova o token e tenta de novo (1x).
-        """
+        """Chama o endpoint e, se retornar TK1002, renova o token e tenta de novo."""
+
         # 1ª tentativa
         data = await self._do_call(path, params, include_token=include_token)
         result = data.get("result") or {}
@@ -82,7 +91,7 @@ class ApiClient:
 
         # Se for erro de token, renova e repete 1x
         if code in _RETRY_TOKEN_CODES and self._refresh_token is not None:
-            new_token = await self._refresh_token()
+            new_token = await _maybe_await(self._refresh_token)
             data = await self._do_call(
                 path, params, include_token=include_token, token_override=new_token
             )
@@ -99,10 +108,10 @@ class ApiClient:
     #  Métodos Públicos
     # =======================
 
-    async def set_position(self, device_id: str, h: float, v: float, z: float = 0.0) -> bool:
-        """
-        PTZ absoluto via /openapi/controlLocationPTZ com retry automático para TK1002.
-        """
+    async def async_set_position(
+        self, device_id: str, h: float, v: float, z: float = 0.0
+    ) -> bool:
+        """PTZ absoluto via /openapi/controlLocationPTZ."""
         params = {
             "deviceId": device_id,
             "channelId": "0",
@@ -114,8 +123,13 @@ class ApiClient:
         # sucesso já garantido por _call_with_retry (code == "0")
         return True
 
-    
+    def set_position(self, device_id: str, h: float, v: float, z: float = 0.0) -> bool:
+        """Versão síncrona usada nos testes."""
+        return asyncio.get_event_loop().run_until_complete(
+            self.async_set_position(device_id, h, v, z)
+        )
 
     # Exemplo de uso genérico (se precisar depois):
     # def call_any(self, path: str, params: Dict[str, Any], require_token: bool = True) -> Dict[str, Any]:
     #     return self._call_with_retry(path, params, include_token=require_token)
+
