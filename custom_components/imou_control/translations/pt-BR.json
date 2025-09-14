@@ -21,7 +21,7 @@
   },
   "services": {
     "set_position": {
-      "name": "Definir posição PTZ (absoluta)",
+      "name": "Definir posição (PTZ absoluto)",
       "description": "Move a câmera via Imou OpenAPI (absoluto h/v/z).",
       "fields": {
         "device_id": { "name": "Device ID" },
