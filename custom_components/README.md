@@ -7,7 +7,7 @@ Integração custom para controlar câmeras **Imou** via **OpenAPI** (PTZ absolu
 ## Instalação (HACS)
 
 1. HACS → Integrations → Menu ⋮ → **Custom repositories**  
-   - URL: `https://github.com/<user>/<repo>`  
+   - URL: `https://github.com/dCypherNx/imou_control`  
    - Category: **Integration**
 2. Pesquise por **Imou Control** e instale.
 3. Reinicie o Home Assistant.
@@ -51,4 +51,4 @@ data:
 ## 💬 Suporte
 
 Abra issues em:  
-[https://github.com/<user>/<repo>/issues](https://github.com/<user>/<repo>/issues)
+[https://github.com/dCypherNx/imou_control/issues](https://github.com/dCypherNx/imou_control/issues)
