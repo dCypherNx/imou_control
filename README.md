@@ -13,6 +13,8 @@ definidos ficam disponíveis em uma entidade *select* e podem ser acionados
 diretamente nela ou via serviço. Todas as entidades são prefixadas com "Imou"
 e possuem traduções para inglês e português.
 
+Os presets gravados são mantidos entre reinicializações do Home Assistant.
+
 ## Serviços disponíveis
 
 ### `imou_control.set_position`

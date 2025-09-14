@@ -16,7 +16,11 @@ class ImouPresetSelect(SelectEntity):
         self._attr_should_poll = False
         self._attr_options = list(data["presets"].keys())
         self._attr_unique_id = f"{self._device_id}_presets"
-        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, self._device_id)})
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, self._device_id)},
+            manufacturer="Imou",
+            name=data["name"],
+        )
         self._attr_has_entity_name = True
         self._attr_translation_key = "presets"
 

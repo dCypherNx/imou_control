@@ -5,6 +5,7 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.storage import Store
 
 from .const import (
     DOMAIN,
@@ -30,11 +31,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     api = ApiClient(app_id, app_secret, url_base, tm.get_token, tm.refresh_token)
 
     hass.data.setdefault(DOMAIN, {})
+    store = Store(hass, 1, f"{DOMAIN}_presets_{entry.entry_id}")
+    saved = await store.async_load() or {}
     data_entry = hass.data[DOMAIN][entry.entry_id] = {
         "tm": tm,
         "api": api,
         "devices": {},
         "devices_by_name": {},
+        "store": store,
     }
 
     registry = dr.async_get(hass)
@@ -49,7 +53,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         name = f"Imou {raw_name}"
         data_entry["devices"][device_id] = {
             "name": name,
-            "presets": {},
+            "presets": saved.get(device_id, {}),
             "last_preset": None,
             "coords": {"h": 0.0, "v": 0.0, "z": 0.0},
             "select_entity": None,
@@ -62,6 +66,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             identifiers={(DOMAIN, device_id)},
             manufacturer="Imou",
             name=name,
+        )
+
+    async def _save_presets() -> None:
+        await data_entry["store"].async_save(
+            {did: dev["presets"] for did, dev in data_entry["devices"].items()}
         )
 
     await hass.config_entries.async_forward_entry_setups(entry, ["number", "select", "button", "text"])
@@ -122,6 +131,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         sel = dev.get("select_entity")
         if sel is not None:
             sel.async_update_presets()
+        await _save_presets()
 
     hass.services.async_register(
         DOMAIN,
@@ -158,6 +168,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         sel = dev.get("select_entity")
         if sel is not None:
             sel.async_update_presets()
+        await _save_presets()
 
     hass.services.async_register(
         DOMAIN,
