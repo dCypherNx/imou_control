@@ -6,7 +6,7 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from .api import ApiClient
@@ -31,7 +31,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     app_secret = entry.data[CONF_APP_SECRET]
     url_base   = entry.data[CONF_URL_BASE]
 
-    session = async_get_clientsession(hass)
+    session = async_create_clientsession(hass)
     tm = TokenManager(app_id, app_secret, url_base, session)
     api = ApiClient(
         app_id,
@@ -43,7 +43,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = {"tm": tm, "api": api, "devices": []}
+    hass.data[DOMAIN][entry.entry_id] = {
+        "tm": tm,
+        "api": api,
+        "session": session,
+        "devices": [],
+    }
 
     async def async_add_device(device: dict) -> None:
         """Add a discovered/configured device and notify listeners."""
@@ -108,6 +113,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         entry_data = hass.data[DOMAIN].pop(entry.entry_id, {})
+        session = entry_data.get("session")
+        if session:
+            await session.close()
         unsub = entry_data.get("unsub_dispatcher")
         if unsub:
             unsub()
