@@ -1,12 +1,13 @@
+import aiohttp
 import pytest
 
 
-class DummyResp:
+class FakeResponse:
     def __init__(self, token: str):
         self._token = token
-        self.content = b"1"
+        self.content_length = 1
 
-    def json(self):
+    async def json(self, content_type=None):
         return {
             "result": {
                 "code": "0",
@@ -17,32 +18,40 @@ class DummyResp:
     def raise_for_status(self):
         pass
 
+    async def __aenter__(self):
+        return self
 
-def test_get_token_caches(monkeypatch, token_module):
+    async def __aexit__(self, exc_type, exc, tb):
+        pass
+
+
+@pytest.mark.asyncio
+async def test_get_token_caches(monkeypatch, token_module):
     calls = []
 
-    def fake_post(url, json, timeout):
+    def fake_post(self, url, json, **kwargs):
         calls.append(1)
-        return DummyResp("abc")
+        return FakeResponse("abc")
 
-    monkeypatch.setattr(token_module.requests, "post", fake_post)
+    monkeypatch.setattr(aiohttp.ClientSession, "post", fake_post)
     tm = token_module.TokenManager("id", "secret", "http://host")
-    t1 = tm.get_token()
-    t2 = tm.get_token()
+    t1 = await tm.get_token()
+    t2 = await tm.get_token()
     assert t1 == t2 == "abc"
     assert len(calls) == 1
 
 
-def test_refresh_and_invalidate(monkeypatch, token_module):
+@pytest.mark.asyncio
+async def test_refresh_and_invalidate(monkeypatch, token_module):
     tokens = ["first", "second", "third"]
 
-    def fake_post(url, json, timeout):
-        return DummyResp(tokens.pop(0))
+    def fake_post(self, url, json, **kwargs):
+        return FakeResponse(tokens.pop(0))
 
-    monkeypatch.setattr(token_module.requests, "post", fake_post)
+    monkeypatch.setattr(aiohttp.ClientSession, "post", fake_post)
     tm = token_module.TokenManager("id", "secret", "http://host")
-    assert tm.get_token() == "first"
-    assert tm.refresh_token() == "second"
+    assert await tm.get_token() == "first"
+    assert await tm.refresh_token() == "second"
     tm.invalidate()
-    assert tm.get_token() == "third"
+    assert await tm.get_token() == "third"
     assert tokens == []
