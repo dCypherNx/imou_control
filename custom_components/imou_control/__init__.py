@@ -45,7 +45,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         devices_info = []
     for info in devices_info:
         device_id = info.get("deviceId")
-        name = info.get("deviceName", f"Imou {device_id}")
+        raw_name = info.get("deviceName") or device_id
+        name = f"Imou {raw_name}"
         data_entry["devices"][device_id] = {
             "name": name,
             "presets": {},
@@ -55,6 +56,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "preset_name": "",
         }
         data_entry["devices_by_name"][name] = device_id
+        data_entry["devices_by_name"][raw_name] = device_id
         registry.async_get_or_create(
             config_entry_id=entry.entry_id,
             identifiers={(DOMAIN, device_id)},

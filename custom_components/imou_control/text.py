@@ -16,9 +16,8 @@ class ImouPresetText(TextEntity):
         self._attr_mode = TextMode.TEXT
         self._attr_unique_id = f"{self._device_id}_preset_name"
         self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, self._device_id)})
-        self._attr_has_entity_name = False
+        self._attr_has_entity_name = True
         self._attr_translation_key = "preset_name"
-        self._attr_translation_placeholders = {"device": data["name"]}
 
     @property
     def native_value(self) -> str | None:

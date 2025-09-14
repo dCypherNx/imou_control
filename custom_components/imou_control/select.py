@@ -6,6 +6,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
 
+
 class ImouPresetSelect(SelectEntity):
     def __init__(self, hass: HomeAssistant, api, device_id: str, data: dict):
         self._hass = hass
@@ -16,9 +17,8 @@ class ImouPresetSelect(SelectEntity):
         self._attr_options = list(data["presets"].keys())
         self._attr_unique_id = f"{self._device_id}_presets"
         self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, self._device_id)})
-        self._attr_has_entity_name = False
+        self._attr_has_entity_name = True
         self._attr_translation_key = "presets"
-        self._attr_translation_placeholders = {"device": data["name"]}
 
     @property
     def current_option(self) -> str | None:
