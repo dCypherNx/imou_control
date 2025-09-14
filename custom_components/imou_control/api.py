@@ -109,27 +109,27 @@ class ApiClient:
 
     def list_devices(self) -> List[Dict[str, Any]]:
         """Obtém a lista de dispositivos vinculados à conta Imou."""
-        params = {"pageNo": 1, "pageSize": 100}
+        params = {
+            "bindId": "-1",
+            "limit": 128,
+            "type": "bindAndShare",
+            "needApInfo": "false",
+        }
         try:
             data = self._call_with_retry(DEVICE_LIST_ENDPOINT, params, include_token=True)
         except Exception as err:
             logging.getLogger(__name__).error("Falha ao listar dispositivos: %s", err)
             return []
 
-        result = data.get("result") or data
+        result = data.get("result") or {}
         devices = (
-            result.get("data")
+            (result.get("data") or {}).get("deviceList")
             or result.get("devices")
             or result.get("list")
             or []
         )
 
-        if isinstance(devices, dict):
-            for key in ("deviceList", "items"):
-                if key in devices:
-                    return devices[key]
-            return []
-        return devices
+        return devices if isinstance(devices, list) else []
 
     # Exemplo de uso genérico (se precisar depois):
     # def call_any(self, path: str, params: Dict[str, Any], require_token: bool = True) -> Dict[str, Any]:
