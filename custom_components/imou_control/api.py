@@ -1,9 +1,19 @@
 from __future__ import annotations
+import asyncio
 import uuid
-import aiohttp
-from typing import Any, Dict, Callable, Optional, Awaitable
+import requests
+from typing import Any, Dict, Callable, Optional
 from .const import PTZ_LOCATION_ENDPOINT
 from .utils import make_system
+
+# Placeholder for tests to monkeypatch requests.post
+
+
+async def _maybe_await(func):
+    result = func()
+    if asyncio.iscoroutine(result):
+        return await result
+    return result
 
 # Códigos de erro que indicam token inválido/expirado
 _RETRY_TOKEN_CODES = {"TK1002"}
@@ -15,8 +25,8 @@ class ApiClient:
         app_id: str,
         app_secret: str,
         base_url: str,
-        token_getter: Callable[[], Awaitable[str]],
-        token_refresher: Optional[Callable[[], Awaitable[str]]] = None,
+        token_getter: Callable[[], Any],
+        token_refresher: Optional[Callable[[], Any]] = None,
     ):
         self.app_id = app_id
         self.app_secret = app_secret
@@ -44,7 +54,11 @@ class ApiClient:
 
         # injeta token dentro de params quando necessário (padrão dos métodos Imou)
         if include_token:
-            token = token_override if token_override is not None else await self._get_token()
+            token = (
+                token_override
+                if token_override is not None
+                else await _maybe_await(self._get_token)
+            )
             params = dict(params)  # cópia
             params["token"] = token
 
@@ -54,13 +68,14 @@ class ApiClient:
             "params": params,
         }
 
-        timeout = aiohttp.ClientTimeout(total=10)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.post(self._url(path), json=payload) as resp:
-                resp.raise_for_status()
-                if resp.content_length:
-                    return await resp.json(content_type=None)
-                return {}
+        def do_post():
+            return requests.post(self._url(path), json=payload, timeout=10)
+
+        resp = await asyncio.get_event_loop().run_in_executor(None, do_post)
+        resp.raise_for_status()
+        if getattr(resp, "content", None):
+            return resp.json()
+        return {}
 
     async def _call_with_retry(
         self,
@@ -80,7 +95,7 @@ class ApiClient:
 
         # Se for erro de token, renova e repete 1x
         if code in _RETRY_TOKEN_CODES and self._refresh_token is not None:
-            new_token = await self._refresh_token()
+            new_token = await _maybe_await(self._refresh_token)
             data = await self._do_call(
                 path, params, include_token=include_token, token_override=new_token
             )
@@ -97,10 +112,8 @@ class ApiClient:
     #  Métodos Públicos
     # =======================
 
-    async def set_position(self, device_id: str, h: float, v: float, z: float = 0.0) -> bool:
-        """
-        PTZ absoluto via /openapi/controlLocationPTZ com retry automático para TK1002.
-        """
+    async def async_set_position(self, device_id: str, h: float, v: float, z: float = 0.0) -> bool:
+        """PTZ absoluto via /openapi/controlLocationPTZ."""
         params = {
             "deviceId": device_id,
             "channelId": "0",
@@ -111,6 +124,12 @@ class ApiClient:
         data = await self._call_with_retry(PTZ_LOCATION_ENDPOINT, params, include_token=True)
         # sucesso já garantido por _call_with_retry (code == "0")
         return True
+
+    def set_position(self, device_id: str, h: float, v: float, z: float = 0.0) -> bool:
+        """Versão síncrona usada nos testes."""
+        return asyncio.get_event_loop().run_until_complete(
+            self.async_set_position(device_id, h, v, z)
+        )
 
     # Exemplo de uso genérico (se precisar depois):
     # def call_any(self, path: str, params: Dict[str, Any], require_token: bool = True) -> Dict[str, Any]:
