@@ -64,7 +64,7 @@ class ImouSavePresetButton(ButtonEntity):
             "save_preset",
             {"device": self._device_id, "preset": preset},
             blocking=True,
-            context=self.context,
+            context=self._context,
         )
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities):

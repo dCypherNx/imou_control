@@ -6,6 +6,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
 
+
 class ImouAxisNumber(NumberEntity):
     def __init__(self, hass: HomeAssistant, device_id: str, axis: str, data: dict):
         self._hass = hass
@@ -13,39 +14,21 @@ class ImouAxisNumber(NumberEntity):
         self._axis = axis
         self._data = data
         self._attr_should_poll = False
-        self._attr_mode = NumberMode.BOX
+        self._attr_mode = NumberMode.SLIDER
 
-    @property
-    def name(self) -> str:
-        axis_name = {"h": "Horizontal", "v": "Vertical"}.get(self._axis, self._axis)
-        return f"{self._data['name']} {axis_name}"
+        axis_name = {"h": "Horizontal", "v": "Vertical"}.get(axis, axis)
+        self._attr_name = f"{data['name']} {axis_name}"
+        self._attr_unique_id = f"{device_id}_{axis}"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, device_id)})
 
-    @property
-    def unique_id(self) -> str:
-        return f"{self._device_id}_{self._axis}"
+        self._attr_native_min_value = -1.0
+        self._attr_native_max_value = 1.0
+        self._attr_native_step = 0.01
+        self._attr_native_value = data["coords"][axis]
 
-    @property
-    def min_value(self) -> float:
-        return -1.0
-
-    @property
-    def max_value(self) -> float:
-        return 1.0
-
-    @property
-    def step(self) -> float:
-        return 0.01
-
-    @property
-    def value(self) -> float:
-        return self._data["coords"][self._axis]
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        return DeviceInfo(identifiers={(DOMAIN, self._device_id)})
-
-    async def async_set_value(self, value: float) -> None:
+    async def async_set_native_value(self, value: float) -> None:
         self._data["coords"][self._axis] = float(value)
+        self._attr_native_value = float(value)
         self.async_write_ha_state()
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities):
