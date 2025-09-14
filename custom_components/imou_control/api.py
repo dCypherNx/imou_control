@@ -18,17 +18,15 @@ class ApiClient:
         app_secret: str,
         base_url: str,
         token_getter: Callable[[], Awaitable[str]],
+        session: aiohttp.ClientSession,
         token_refresher: Optional[Callable[[], Awaitable[str]]] = None,
-        session: aiohttp.ClientSession | None = None,
     ) -> None:
         self.app_id = app_id
         self.app_secret = app_secret
         self.base_url = base_url.rstrip("/")
         self._get_token = token_getter
         self._refresh_token = token_refresher
-        timeout = aiohttp.ClientTimeout(total=10)
-        self._session = session or aiohttp.ClientSession(timeout=timeout)
-        self._owns_session = session is None
+        self._session = session
 
     def _url(self, path: str) -> str:
         return f"{self.base_url}{path}"
@@ -116,10 +114,7 @@ class ApiClient:
         # sucesso já garantido por _call_with_retry (code == "0")
         return True
 
-    async def async_close(self) -> None:
-        """Fecha a sessão HTTP se ela foi criada internamente."""
-        if self._owns_session:
-            await self._session.close()
+    
 
     # Exemplo de uso genérico (se precisar depois):
     # def call_any(self, path: str, params: Dict[str, Any], require_token: bool = True) -> Dict[str, Any]:

@@ -17,16 +17,14 @@ class TokenManager:
         app_id: str,
         app_secret: str,
         base_url: str,
-        session: aiohttp.ClientSession | None = None,
+        session: aiohttp.ClientSession,
     ) -> None:
         self._app_id = app_id
         self._app_secret = app_secret
         self._base_url = base_url.rstrip("/")
         self._token: Optional[str] = None
         self._exp_ts: float = 0.0  # epoch seconds
-        timeout = aiohttp.ClientTimeout(total=10)
-        self._session = session or aiohttp.ClientSession(timeout=timeout)
-        self._owns_session = session is None
+        self._session = session
 
     def _url(self, path: str) -> str:
         return f"{self._base_url}{path}"
@@ -85,8 +83,5 @@ class TokenManager:
         self._token = None
         self._exp_ts = 0.0
 
-    async def async_close(self) -> None:
-        """Fecha a sessão HTTP se ela foi criada internamente."""
-        if self._owns_session:
-            await self._session.close()
+
 

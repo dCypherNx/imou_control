@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import aiohttp
 import logging
 
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import ApiClient
 from .const import CONF_APP_ID, CONF_APP_SECRET, CONF_URL_BASE, DOMAIN
@@ -24,13 +24,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     app_secret = entry.data[CONF_APP_SECRET]
     url_base   = entry.data[CONF_URL_BASE]
 
-    timeout = aiohttp.ClientTimeout(total=10)
-    session = aiohttp.ClientSession(timeout=timeout)
-    tm = TokenManager(app_id, app_secret, url_base, session=session)
+    session = async_get_clientsession(hass)
+    tm = TokenManager(app_id, app_secret, url_base, session)
     api = ApiClient(app_id, app_secret, url_base, tm.get_token, tm.refresh_token, session)
 
     hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = {"tm": tm, "api": api, "session": session}
+    hass.data[DOMAIN][entry.entry_id] = {"tm": tm, "api": api}
 
     async def srv_set_position(call: ServiceCall):
         device_id = call.data["device_id"]
@@ -60,8 +59,5 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
-        data = hass.data[DOMAIN].pop(entry.entry_id, {})
-        session: aiohttp.ClientSession | None = data.get("session")
-        if session is not None:
-            await session.close()
+        hass.data[DOMAIN].pop(entry.entry_id, None)
     return unload_ok

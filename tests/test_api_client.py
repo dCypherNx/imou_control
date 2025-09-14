@@ -48,7 +48,7 @@ async def test_retry_on_token_error(api_module):
         return token
 
     api = api_module.ApiClient(
-        "id", "sec", "http://host", get_token, refresh_token, session=session
+        "id", "sec", "http://host", get_token, session, refresh_token
     )
     assert await api.set_position("dev", 0.1, 0.2, 0.3)
     assert session.tokens == ["t1", "t2"]
@@ -68,7 +68,7 @@ async def test_failure_raises(api_module):
         return "tok2"
 
     api = api_module.ApiClient(
-        "id", "sec", "http://host", get_token, refresh_token, session=FailSession()
+        "id", "sec", "http://host", get_token, FailSession(), refresh_token
     )
     with pytest.raises(RuntimeError):
         await api.set_position("dev", 0, 0, 0)
