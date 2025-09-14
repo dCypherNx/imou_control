@@ -58,9 +58,10 @@ class ApiClient:
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.post(self._url(path), json=payload) as resp:
                 resp.raise_for_status()
-                if resp.content_length:
+                try:
                     return await resp.json(content_type=None)
-                return {}
+                except (aiohttp.ContentTypeError, aiohttp.ClientPayloadError, ValueError):
+                    return {}
 
     async def _call_with_retry(
         self,
