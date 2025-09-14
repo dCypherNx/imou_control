@@ -14,3 +14,37 @@ set_position:
     z:
       description: Zoom (se aplicável)
       example: 0
+
+define_preset:
+  name: Definir preset de posição
+  description: Armazena localmente um preset com h/v/z para o dispositivo.
+  fields:
+    device_id:
+      description: Device ID da câmera na Imou
+      example: 5250FACPBV99ADE
+    preset:
+      description: Nome do preset
+      example: sala
+    h:
+      description: Posição horizontal
+      example: -0.60
+    v:
+      description: Posição vertical
+      example: 0.15
+    z:
+      description: Zoom (se aplicável)
+      example: 0
+    name:
+      description: Nome amigável do dispositivo (opcional)
+      example: Camera Sala
+
+call_preset:
+  name: Chamar preset
+  description: Move a câmera para o preset definido, evitando repetição desnecessária.
+  fields:
+    device_id:
+      description: Device ID da câmera na Imou
+      example: 5250FACPBV99ADE
+    preset:
+      description: Nome do preset a ser chamado
+      example: sala
