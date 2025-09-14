@@ -52,6 +52,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "last_preset": None,
             "coords": {"h": 0.0, "v": 0.0, "z": 0.0},
             "select_entity": None,
+            "preset_name": "",
         }
         data_entry["devices_by_name"][name] = device_id
         registry.async_get_or_create(
@@ -61,7 +62,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             name=name,
         )
 
-    await hass.config_entries.async_forward_entry_setups(entry, ["number", "select", "button"])
+    await hass.config_entries.async_forward_entry_setups(entry, ["number", "select", "button", "text"])
 
     def resolve_device_id(device: str) -> str | None:
         if device in data_entry["devices"]:
@@ -218,6 +219,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    await hass.config_entries.async_unload_platforms(entry, ["number", "select", "button"])
+    await hass.config_entries.async_unload_platforms(entry, ["number", "select", "button", "text"])
     hass.data[DOMAIN].pop(entry.entry_id, None)
     return True
