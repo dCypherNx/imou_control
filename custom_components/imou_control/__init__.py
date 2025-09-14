@@ -38,7 +38,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     }
 
     registry = dr.async_get(hass)
-    devices_info = await hass.async_add_executor_job(api.list_devices)
+    try:
+        devices_info = await hass.async_add_executor_job(api.list_devices)
+    except Exception as err:
+        _LOGGER.error("Não foi possível obter a lista de dispositivos: %s", err)
+        devices_info = []
     for info in devices_info:
         device_id = info.get("deviceId")
         name = info.get("deviceName", f"Imou {device_id}")

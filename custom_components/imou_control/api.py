@@ -1,5 +1,6 @@
 from __future__ import annotations
 import uuid
+import logging
 import requests
 from typing import Any, Dict, Callable, Optional, Tuple, List
 from .const import PTZ_LOCATION_ENDPOINT, DEVICE_LIST_ENDPOINT
@@ -108,9 +109,27 @@ class ApiClient:
 
     def list_devices(self) -> List[Dict[str, Any]]:
         """Obtém a lista de dispositivos vinculados à conta Imou."""
-        data = self._call_with_retry(DEVICE_LIST_ENDPOINT, {}, include_token=True)
-        result = data.get("result") or {}
-        return result.get("data", [])
+        params = {"pageNo": 1, "pageSize": 100}
+        try:
+            data = self._call_with_retry(DEVICE_LIST_ENDPOINT, params, include_token=True)
+        except Exception as err:
+            logging.getLogger(__name__).error("Falha ao listar dispositivos: %s", err)
+            return []
+
+        result = data.get("result") or data
+        devices = (
+            result.get("data")
+            or result.get("devices")
+            or result.get("list")
+            or []
+        )
+
+        if isinstance(devices, dict):
+            for key in ("deviceList", "items"):
+                if key in devices:
+                    return devices[key]
+            return []
+        return devices
 
     # Exemplo de uso genérico (se precisar depois):
     # def call_any(self, path: str, params: Dict[str, Any], require_token: bool = True) -> Dict[str, Any]:
