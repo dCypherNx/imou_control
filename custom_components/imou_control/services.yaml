@@ -35,6 +35,17 @@ define_preset:
       description: Zoom (se aplicável)
       example: 0
 
+save_preset:
+  name: Salvar preset com valores atuais
+  description: Armazena um preset usando os valores atuais das entidades H e V.
+  fields:
+    device:
+      description: Nome ou ID do dispositivo
+      example: Camera Sala
+    preset:
+      description: Nome do preset
+      example: sala
+
 call_preset:
   name: Chamar preset
   description: Move a câmera para o preset definido, evitando repetição desnecessária.

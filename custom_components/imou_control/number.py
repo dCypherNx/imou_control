@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-from homeassistant.components.number import NumberEntity
+from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
 
 class ImouAxisNumber(NumberEntity):
-    def __init__(self, hass: HomeAssistant, api, device_id: str, axis: str, data: dict):
+    def __init__(self, hass: HomeAssistant, device_id: str, axis: str, data: dict):
         self._hass = hass
-        self._api = api
         self._device_id = device_id
         self._axis = axis
         self._data = data
         self._attr_should_poll = False
+        self._attr_mode = NumberMode.BOX
 
     @property
     def name(self) -> str:
@@ -26,15 +26,15 @@ class ImouAxisNumber(NumberEntity):
 
     @property
     def min_value(self) -> float:
-        return -180.0
+        return -1.0
 
     @property
     def max_value(self) -> float:
-        return 180.0
+        return 1.0
 
     @property
     def step(self) -> float:
-        return 1.0
+        return 0.01
 
     @property
     def value(self) -> float:
@@ -46,19 +46,12 @@ class ImouAxisNumber(NumberEntity):
 
     async def async_set_value(self, value: float) -> None:
         self._data["coords"][self._axis] = float(value)
-        h = self._data["coords"]["h"]
-        v = self._data["coords"]["v"]
-        z = self._data["coords"].get("z", 0.0)
-        await self._hass.async_add_executor_job(
-            self._api.set_position, self._device_id, h, v, z
-        )
         self.async_write_ha_state()
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
-    api = data["api"]
     entities = []
     for device_id, dev in data["devices"].items():
-        entities.append(ImouAxisNumber(hass, api, device_id, "h", dev))
-        entities.append(ImouAxisNumber(hass, api, device_id, "v", dev))
+        entities.append(ImouAxisNumber(hass, device_id, "h", dev))
+        entities.append(ImouAxisNumber(hass, device_id, "v", dev))
     async_add_entities(entities)

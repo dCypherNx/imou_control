@@ -61,7 +61,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             name=name,
         )
 
-    await hass.config_entries.async_forward_entry_setups(entry, ["number", "select"])
+    await hass.config_entries.async_forward_entry_setups(entry, ["number", "select", "button"])
 
     def resolve_device_id(device: str) -> str | None:
         if device in data_entry["devices"]:
@@ -135,6 +135,39 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ),
     )
 
+    async def srv_save_preset(call: ServiceCall):
+        device = call.data["device"]
+        device_id = resolve_device_id(device)
+        if not device_id:
+            _LOGGER.warning("Dispositivo %s não encontrado", device)
+            return
+        preset = call.data["preset"]
+
+        data = hass.data[DOMAIN][entry.entry_id]
+        dev = data["devices"][device_id]
+        if preset in dev["presets"]:
+            _LOGGER.warning("Preset %s já definido para %s", preset, device_id)
+            return
+        h = dev["coords"]["h"]
+        v = dev["coords"]["v"]
+        z = dev["coords"].get("z", 0.0)
+        dev["presets"][preset] = (h, v, z)
+        sel = dev.get("select_entity")
+        if sel is not None:
+            sel.async_update_presets()
+
+    hass.services.async_register(
+        DOMAIN,
+        "save_preset",
+        srv_save_preset,
+        schema=vol.Schema(
+            {
+                vol.Required("device"): cv.string,
+                vol.Required("preset"): cv.string,
+            }
+        ),
+    )
+
     async def srv_call_preset(call: ServiceCall):
         device = call.data["device"]
         device_id = resolve_device_id(device)
@@ -185,6 +218,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    await hass.config_entries.async_unload_platforms(entry, ["number", "select"])
+    await hass.config_entries.async_unload_platforms(entry, ["number", "select", "button"])
     hass.data[DOMAIN].pop(entry.entry_id, None)
     return True
