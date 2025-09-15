@@ -1,44 +1,52 @@
-# custom_components/imou_control/select.py
 from __future__ import annotations
-from typing import List
+
 from homeassistant.components.select import SelectEntity
 from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant
+
 from .const import DOMAIN
 
-async def async_setup_entry(hass, entry, async_add_entities):
-    data = hass.data[DOMAIN][entry.entry_id]
-    devices = data.get("devices", [])
-
-    entities: List[ImouCameraPresetSelect] = []
-    for d in devices:
-        entities.append(ImouCameraPresetSelect(entry, d))
-    async_add_entities(entities, True)
-
-class ImouCameraPresetSelect(SelectEntity):
-    _attr_icon = "mdi:format-list-numbered"
-
-    def __init__(self, entry, device: dict):
-        self._entry = entry
-        self._device_id = device["device_id"]
-        self._name = device.get("name") or "Imou Camera"
-        self._model = device.get("model") or ""
-        # valores iniciais (sem presets ainda)
-        self._attr_name = f"Imou {self._name} Preset"
-        self._attr_unique_id = f"{entry.entry_id}:{self._device_id}:preset_select"
-        self._attr_options = ["0 — none"]
-        self._attr_current_option = "0 — none"
+class ImouPresetSelect(SelectEntity):
+    def __init__(self, hass: HomeAssistant, api, device_id: str, data: dict):
+        self._hass = hass
+        self._api = api
+        self._device_id = device_id
+        self._data = data
+        self._attr_should_poll = False
+        self._attr_options = list(data["presets"].keys())
+        self._attr_unique_id = f"{self._device_id}_presets"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, self._device_id)},
+            manufacturer="Imou",
+            name=data["name"],
+        )
+        self._attr_has_entity_name = True
+        self._attr_translation_key = "presets"
 
     @property
-    def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
-            identifiers={(DOMAIN, f"{self._entry.entry_id}:{self._device_id}")},
-            name=f"Imou {self._name}",
-            model=self._model or None,
-            manufacturer="Imou",
-        )
+    def current_option(self) -> str | None:
+        return self._data.get("last_preset")
 
     async def async_select_option(self, option: str) -> None:
-        # por enquanto, sem lógica de presets — isso entra na próxima etapa
-        self._attr_current_option = option
+        await self._hass.services.async_call(
+            DOMAIN,
+            "call_preset",
+            {"device": self._device_id, "preset": option},
+            context=self._context,
+        )
+        self._data["last_preset"] = option
         self.async_write_ha_state()
+
+    def async_update_presets(self) -> None:
+        self._attr_options = list(self._data["presets"].keys())
+        self.async_write_ha_state()
+
+async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities):
+    data = hass.data[DOMAIN][entry.entry_id]
+    api = data["api"]
+    entities = []
+    for device_id, dev in data["devices"].items():
+        ent = ImouPresetSelect(hass, api, device_id, dev)
+        dev["select_entity"] = ent
+        entities.append(ent)
+    async_add_entities(entities)

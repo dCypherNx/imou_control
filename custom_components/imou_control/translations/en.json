@@ -1,0 +1,18 @@
+{
+  "entity": {
+    "button": {
+      "move": {"name": "3 Move"},
+      "save_preset": {"name": "5 Save Preset"}
+    },
+    "number": {
+      "horizontal": {"name": "1 Horizontal"},
+      "vertical": {"name": "2 Vertical"}
+    },
+    "select": {
+      "presets": {"name": "6 Presets"}
+    },
+    "text": {
+      "preset_name": {"name": "4 Preset Name"}
+    }
+  }
+}

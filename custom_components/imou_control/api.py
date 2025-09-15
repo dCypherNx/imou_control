@@ -1,8 +1,9 @@
 from __future__ import annotations
 import uuid
+import logging
 import requests
-from typing import Any, Dict, Callable, Optional, Tuple
-from .const import PTZ_LOCATION_ENDPOINT
+from typing import Any, Dict, Callable, Optional, Tuple, List
+from .const import PTZ_LOCATION_ENDPOINT, DEVICE_LIST_ENDPOINT
 from .utils import make_system
 
 # Códigos de erro que indicam token inválido/expirado
@@ -105,6 +106,30 @@ class ApiClient:
         data = self._call_with_retry(PTZ_LOCATION_ENDPOINT, params, include_token=True)
         # sucesso já garantido por _call_with_retry (code == "0")
         return True
+
+    def list_devices(self) -> List[Dict[str, Any]]:
+        """Obtém a lista de dispositivos vinculados à conta Imou."""
+        params = {
+            "bindId": "-1",
+            "limit": 128,
+            "type": "bindAndShare",
+            "needApInfo": "false",
+        }
+        try:
+            data = self._call_with_retry(DEVICE_LIST_ENDPOINT, params, include_token=True)
+        except Exception as err:
+            logging.getLogger(__name__).error("Falha ao listar dispositivos: %s", err)
+            return []
+
+        result = data.get("result") or {}
+        devices = (
+            (result.get("data") or {}).get("deviceList")
+            or result.get("devices")
+            or result.get("list")
+            or []
+        )
+
+        return devices if isinstance(devices, list) else []
 
     # Exemplo de uso genérico (se precisar depois):
     # def call_any(self, path: str, params: Dict[str, Any], require_token: bool = True) -> Dict[str, Any]:

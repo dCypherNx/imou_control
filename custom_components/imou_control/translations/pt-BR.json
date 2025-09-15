@@ -1,0 +1,18 @@
+{
+  "entity": {
+    "button": {
+      "move": {"name": "3 Mover"},
+      "save_preset": {"name": "5 Salvar Predefinição"}
+    },
+    "number": {
+      "horizontal": {"name": "1 Horizontal"},
+      "vertical": {"name": "2 Vertical"}
+    },
+    "select": {
+      "presets": {"name": "6 Predefinições"}
+    },
+    "text": {
+      "preset_name": {"name": "4 Nome da Predefinição"}
+    }
+  }
+}

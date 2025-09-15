@@ -2,9 +2,9 @@ set_position:
   name: Ajustar posição da câmera (PTZ absoluto)
   description: Move a câmera para a posição absoluta por h/v/z usando a API da Imou.
   fields:
-    device_id:
-      description: Device ID da câmera na Imou
-      example: 5250FACPBV99ADE
+    device:
+      description: Nome ou ID do dispositivo
+      example: Camera Sala
     h:
       description: Posição horizontal (-1..1, conforme sua API)
       example: -0.60
@@ -14,3 +14,45 @@ set_position:
     z:
       description: Zoom (se aplicável)
       example: 0
+
+define_preset:
+  name: Definir preset de posição
+  description: Armazena localmente um preset com h/v/z para o dispositivo.
+  fields:
+    device:
+      description: Nome ou ID do dispositivo
+      example: Camera Sala
+    preset:
+      description: Nome do preset
+      example: sala
+    h:
+      description: Posição horizontal
+      example: -0.60
+    v:
+      description: Posição vertical
+      example: 0.15
+    z:
+      description: Zoom (se aplicável)
+      example: 0
+
+save_preset:
+  name: Salvar preset com valores atuais
+  description: Armazena um preset usando os valores atuais das entidades H e V.
+  fields:
+    device:
+      description: Nome ou ID do dispositivo
+      example: Camera Sala
+    preset:
+      description: Nome do preset
+      example: sala
+
+call_preset:
+  name: Chamar preset
+  description: Move a câmera para o preset definido, evitando repetição desnecessária.
+  fields:
+    device:
+      description: Nome ou ID do dispositivo
+      example: Camera Sala
+    preset:
+      description: Nome do preset a ser chamado
+      example: sala
