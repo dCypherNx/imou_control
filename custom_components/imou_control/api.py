@@ -1,13 +1,25 @@
 from __future__ import annotations
-import uuid
+
+import asyncio
+import inspect
+import json
 import logging
-import requests
-from typing import Any, Dict, Callable, Optional, Tuple, List
+import uuid
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
+
+import aiohttp
+
 from .const import PTZ_LOCATION_ENDPOINT, DEVICE_LIST_ENDPOINT
 from .utils import make_system
 
 # Códigos de erro que indicam token inválido/expirado
 _RETRY_TOKEN_CODES = {"TK1002"}
+
+
+_LOGGER = logging.getLogger(__name__)
+
+
+TokenCallable = Callable[[], Union[str, Awaitable[str]]]
 
 
 class ApiClient:
@@ -16,19 +28,28 @@ class ApiClient:
         app_id: str,
         app_secret: str,
         base_url: str,
-        token_getter: Callable[[], str],
-        token_refresher: Optional[Callable[[], str]] = None,
+        session: aiohttp.ClientSession,
+        token_getter: TokenCallable,
+        token_refresher: Optional[TokenCallable] = None,
     ):
         self.app_id = app_id
         self.app_secret = app_secret
         self.base_url = base_url.rstrip("/")
+        self._session = session
         self._get_token = token_getter
         self._refresh_token = token_refresher
+        self._timeout = aiohttp.ClientTimeout(total=10)
 
     def _url(self, path: str) -> str:
         return f"{self.base_url}{path}"
 
-    def _do_call(
+    async def _resolve_token(self, func: TokenCallable) -> str:
+        token = func()
+        if inspect.isawaitable(token):
+            return await token
+        return token
+
+    async def _do_call(
         self,
         path: str,
         params: Dict[str, Any],
@@ -45,7 +66,11 @@ class ApiClient:
 
         # injeta token dentro de params quando necessário (padrão dos métodos Imou)
         if include_token:
-            token = token_override if token_override is not None else self._get_token()
+            token = (
+                token_override
+                if token_override is not None
+                else await self._resolve_token(self._get_token)
+            )
             params = dict(params)  # cópia
             params["token"] = token
 
@@ -55,11 +80,29 @@ class ApiClient:
             "params": params,
         }
 
-        resp = requests.post(self._url(path), json=payload, timeout=10)
-        resp.raise_for_status()
-        return resp.json() if resp.content else {}
+        try:
+            async with self._session.post(
+                self._url(path), json=payload, timeout=self._timeout
+            ) as response:
+                response.raise_for_status()
+                text = await response.text()
+        except asyncio.TimeoutError as err:
+            _LOGGER.error("Timeout ao chamar %s: %s", path, err)
+            raise RuntimeError(f"Timeout ao chamar {path}") from err
+        except aiohttp.ClientError as err:
+            _LOGGER.error("Erro de cliente ao chamar %s: %s", path, err)
+            raise RuntimeError(f"Erro de cliente ao chamar {path}") from err
 
-    def _call_with_retry(
+        if not text:
+            return {}
+
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError as err:
+            _LOGGER.error("Resposta inválida ao chamar %s: %s", path, err)
+            raise RuntimeError(f"Resposta inválida ao chamar {path}") from err
+
+    async def _call_with_retry(
         self,
         path: str,
         params: Dict[str, Any],
@@ -69,7 +112,7 @@ class ApiClient:
         Chama o endpoint e, se retornar TK1002, renova o token e tenta de novo (1x).
         """
         # 1ª tentativa
-        data = self._do_call(path, params, include_token=include_token)
+        data = await self._do_call(path, params, include_token=include_token)
         result = data.get("result") or {}
         code = str(result.get("code", "0"))
         if code == "0" or not include_token:
@@ -77,8 +120,13 @@ class ApiClient:
 
         # Se for erro de token, renova e repete 1x
         if code in _RETRY_TOKEN_CODES and self._refresh_token is not None:
-            new_token = self._refresh_token()
-            data = self._do_call(path, params, include_token=include_token, token_override=new_token)
+            new_token = await self._resolve_token(self._refresh_token)
+            data = await self._do_call(
+                path,
+                params,
+                include_token=include_token,
+                token_override=new_token,
+            )
             result = data.get("result") or {}
             code = str(result.get("code", "0"))
             if code == "0":
@@ -92,7 +140,7 @@ class ApiClient:
     #  Métodos Públicos
     # =======================
 
-    def set_position(self, device_id: str, h: float, v: float, z: float = 0.0) -> bool:
+    async def set_position(self, device_id: str, h: float, v: float, z: float = 0.0) -> bool:
         """
         PTZ absoluto via /openapi/controlLocationPTZ com retry automático para TK1002.
         """
@@ -103,11 +151,11 @@ class ApiClient:
             "v": float(v),
             "z": float(z),
         }
-        data = self._call_with_retry(PTZ_LOCATION_ENDPOINT, params, include_token=True)
+        data = await self._call_with_retry(PTZ_LOCATION_ENDPOINT, params, include_token=True)
         # sucesso já garantido por _call_with_retry (code == "0")
         return True
 
-    def list_devices(self) -> List[Dict[str, Any]]:
+    async def list_devices(self) -> List[Dict[str, Any]]:
         """Obtém a lista de dispositivos vinculados à conta Imou."""
         params = {
             "bindId": "-1",
@@ -116,9 +164,9 @@ class ApiClient:
             "needApInfo": "false",
         }
         try:
-            data = self._call_with_retry(DEVICE_LIST_ENDPOINT, params, include_token=True)
+            data = await self._call_with_retry(DEVICE_LIST_ENDPOINT, params, include_token=True)
         except Exception as err:
-            logging.getLogger(__name__).error("Falha ao listar dispositivos: %s", err)
+            _LOGGER.error("Falha ao listar dispositivos: %s", err)
             return []
 
         result = data.get("result") or {}
