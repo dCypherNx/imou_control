@@ -33,6 +33,7 @@ class TokenManager:
         self._token: Optional[str] = None
         self._exp_ts: float = 0.0  # epoch seconds
         self._timeout = aiohttp.ClientTimeout(total=10)
+        self._lock = asyncio.Lock()
 
     def _url(self, path: str) -> str:
         return f"{self._base_url}{path}"
@@ -90,21 +91,28 @@ class TokenManager:
         return token, exp_ts
 
     async def get_token(self) -> str:
-        now = time.time()
-        if not self._token or now >= self._exp_ts:
+        if self._token and time.time() < self._exp_ts:
+            return self._token
+
+        async with self._lock:
+            if self._token and time.time() < self._exp_ts:
+                return self._token
+
             token, exp_ts = await self._fetch_new_token()
             self._token, self._exp_ts = token, exp_ts
-        return self._token
+            return self._token
 
     # ==== NOVO: APIs para forçar renovação (usadas no retry) ====
 
     async def refresh_token(self) -> str:
         """Força renovação imediata do token e retorna o novo valor."""
-        token, exp_ts = await self._fetch_new_token()
-        self._token, self._exp_ts = token, exp_ts
-        return self._token
+        async with self._lock:
+            token, exp_ts = await self._fetch_new_token()
+            self._token, self._exp_ts = token, exp_ts
+            return self._token
 
-    def invalidate(self) -> None:
+    async def invalidate(self) -> None:
         """Invalida o token atual (próxima get_token() renova)."""
-        self._token = None
-        self._exp_ts = 0.0
+        async with self._lock:
+            self._token = None
+            self._exp_ts = 0.0
