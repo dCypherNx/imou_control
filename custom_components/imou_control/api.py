@@ -10,6 +10,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
 import aiohttp
 
 from .const import PTZ_LOCATION_ENDPOINT, DEVICE_LIST_ENDPOINT
+from .usage import ApiUsageTracker
 from .utils import make_system
 
 # Códigos de erro que indicam token inválido/expirado
@@ -31,6 +32,7 @@ class ApiClient:
         session: aiohttp.ClientSession,
         token_getter: TokenCallable,
         token_refresher: Optional[TokenCallable] = None,
+        usage: ApiUsageTracker | None = None,
     ):
         self.app_id = app_id
         self.app_secret = app_secret
@@ -39,6 +41,7 @@ class ApiClient:
         self._get_token = token_getter
         self._refresh_token = token_refresher
         self._timeout = aiohttp.ClientTimeout(total=10)
+        self._usage = usage
 
     def _url(self, path: str) -> str:
         return f"{self.base_url}{path}"
@@ -84,6 +87,8 @@ class ApiClient:
             async with self._session.post(
                 self._url(path), json=payload, timeout=self._timeout
             ) as response:
+                if self._usage is not None:
+                    self._usage.note_call(response.headers.get("Date"))
                 response.raise_for_status()
                 text = await response.text()
         except asyncio.TimeoutError as err:

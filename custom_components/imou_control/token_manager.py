@@ -10,6 +10,7 @@ from typing import Any, Dict, Optional, Tuple
 import aiohttp
 
 from .const import TOKEN_ENDPOINT
+from .usage import ApiUsageTracker
 from .utils import make_system
 
 
@@ -25,6 +26,7 @@ class TokenManager:
         app_secret: str,
         base_url: str,
         session: aiohttp.ClientSession,
+        usage: ApiUsageTracker | None = None,
     ):
         self._app_id = app_id
         self._app_secret = app_secret
@@ -34,6 +36,7 @@ class TokenManager:
         self._exp_ts: float = 0.0  # epoch seconds
         self._timeout = aiohttp.ClientTimeout(total=10)
         self._lock = asyncio.Lock()
+        self._usage = usage
 
     def _url(self, path: str) -> str:
         return f"{self._base_url}{path}"
@@ -57,6 +60,8 @@ class TokenManager:
             async with self._session.post(
                 self._url(TOKEN_ENDPOINT), json=payload, timeout=self._timeout
             ) as response:
+                if self._usage is not None:
+                    self._usage.note_call(response.headers.get("Date"))
                 response.raise_for_status()
                 text = await response.text()
         except asyncio.TimeoutError as err:

@@ -13,6 +13,9 @@
     },
     "text": {
       "preset_name": {"name": "Preset - Name"}
+    },
+    "sensor": {
+      "api_usage": {"name": "Account - API Usage"}
     }
   }
 }
