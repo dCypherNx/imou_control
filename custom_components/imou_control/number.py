@@ -34,10 +34,18 @@ class ImouAxisNumber(NumberEntity):
         self._attr_native_value = float(value)
         self.async_write_ha_state()
 
+    def update_from_preset(self, value: float) -> None:
+        self._attr_native_value = float(value)
+        self.async_write_ha_state()
+
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities):
     data = hass.data[DOMAIN][entry.entry_id]
     entities = []
     for device_id, dev in data["devices"].items():
-        entities.append(ImouAxisNumber(hass, device_id, "h", dev))
-        entities.append(ImouAxisNumber(hass, device_id, "v", dev))
+        number_h = ImouAxisNumber(hass, device_id, "h", dev)
+        number_v = ImouAxisNumber(hass, device_id, "v", dev)
+        dev["number_entities"]["h"] = number_h
+        dev["number_entities"]["v"] = number_v
+        entities.append(number_h)
+        entities.append(number_v)
     async_add_entities(entities)
