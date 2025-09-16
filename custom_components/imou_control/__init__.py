@@ -244,6 +244,45 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ),
     )
 
+    async def srv_delete_preset(call: ServiceCall):
+        """Remove um preset previamente armazenado."""
+
+        device = call.data["device"]
+        device_id = resolve_device_id(device)
+        if not device_id:
+            _LOGGER.warning("Dispositivo %s não encontrado", device)
+            return
+        preset = call.data["preset"]
+
+        data = hass.data[DOMAIN][entry.entry_id]
+        dev = data["devices"].get(device_id)
+        if not dev:
+            _LOGGER.warning("Dispositivo %s não encontrado", device_id)
+            return
+        if preset not in dev["presets"]:
+            _LOGGER.warning("Preset %s não definido para %s", preset, device_id)
+            return
+
+        dev["presets"].pop(preset)
+        if dev.get("last_preset") == preset:
+            dev["last_preset"] = None
+        sel = dev.get("select_entity")
+        if sel is not None:
+            sel.async_update_presets()
+        await _save_presets()
+
+    hass.services.async_register(
+        DOMAIN,
+        "delete_preset",
+        srv_delete_preset,
+        schema=vol.Schema(
+            {
+                vol.Required("device"): cv.string,
+                vol.Required("preset"): cv.string,
+            }
+        ),
+    )
+
     async def srv_call_preset(call: ServiceCall):
         """Trigger a stored preset using ``imou_control.call_preset``.
 
