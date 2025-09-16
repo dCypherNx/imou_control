@@ -1,23 +1,43 @@
 from __future__ import annotations
-import time, uuid, requests
-from typing import Optional, Tuple, Dict, Any
+
+import asyncio
+import json
+import logging
+import time
+import uuid
+from typing import Any, Dict, Optional, Tuple
+
+import aiohttp
+
 from .const import TOKEN_ENDPOINT
 from .utils import make_system
+
+
+_LOGGER = logging.getLogger(__name__)
+
 
 class TokenManager:
     """Gerencia o accessToken (cache + renovação) para a Imou OpenAPI."""
 
-    def __init__(self, app_id: str, app_secret: str, base_url: str):
+    def __init__(
+        self,
+        app_id: str,
+        app_secret: str,
+        base_url: str,
+        session: aiohttp.ClientSession,
+    ):
         self._app_id = app_id
         self._app_secret = app_secret
         self._base_url = base_url.rstrip("/")
+        self._session = session
         self._token: Optional[str] = None
         self._exp_ts: float = 0.0  # epoch seconds
+        self._timeout = aiohttp.ClientTimeout(total=10)
 
     def _url(self, path: str) -> str:
         return f"{self._base_url}{path}"
 
-    def _fetch_new_token(self) -> Tuple[str, float]:
+    async def _fetch_new_token(self) -> Tuple[str, float]:
         """
         Faz POST em /openapi/accessToken com 'system' assinado (sign/nonce/time).
         Resposta esperada:
@@ -30,11 +50,29 @@ class TokenManager:
         payload: Dict[str, Any] = {
             "system": system,
             "id": str(uuid.uuid4()),
-            "params": {}
+            "params": {},
         }
-        resp = requests.post(self._url(TOKEN_ENDPOINT), json=payload, timeout=10)
-        resp.raise_for_status()
-        data = resp.json() if resp.content else {}
+        try:
+            async with self._session.post(
+                self._url(TOKEN_ENDPOINT), json=payload, timeout=self._timeout
+            ) as response:
+                response.raise_for_status()
+                text = await response.text()
+        except asyncio.TimeoutError as err:
+            _LOGGER.error("Timeout ao solicitar novo token: %s", err)
+            raise RuntimeError("Timeout ao solicitar token") from err
+        except aiohttp.ClientError as err:
+            _LOGGER.error("Erro de cliente ao solicitar novo token: %s", err)
+            raise RuntimeError("Erro de cliente ao solicitar token") from err
+
+        if not text:
+            data: Dict[str, Any] = {}
+        else:
+            try:
+                data = json.loads(text)
+            except json.JSONDecodeError as err:
+                _LOGGER.error("Resposta inválida ao solicitar token: %s", err)
+                raise RuntimeError("Resposta inválida ao solicitar token") from err
 
         result = data.get("result") or {}
         code = str(result.get("code", ""))
@@ -51,18 +89,18 @@ class TokenManager:
         exp_ts = now + expire_in - 30  # margem de 30s
         return token, exp_ts
 
-    def get_token(self) -> str:
+    async def get_token(self) -> str:
         now = time.time()
         if not self._token or now >= self._exp_ts:
-            token, exp_ts = self._fetch_new_token()
+            token, exp_ts = await self._fetch_new_token()
             self._token, self._exp_ts = token, exp_ts
         return self._token
 
     # ==== NOVO: APIs para forçar renovação (usadas no retry) ====
 
-    def refresh_token(self) -> str:
+    async def refresh_token(self) -> str:
         """Força renovação imediata do token e retorna o novo valor."""
-        token, exp_ts = self._fetch_new_token()
+        token, exp_ts = await self._fetch_new_token()
         self._token, self._exp_ts = token, exp_ts
         return self._token
 

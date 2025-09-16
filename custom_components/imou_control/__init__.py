@@ -5,6 +5,7 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.storage import Store
 
 from .const import (
@@ -27,8 +28,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     app_secret = entry.data[CONF_APP_SECRET]
     url_base   = entry.data[CONF_URL_BASE]
 
-    tm = TokenManager(app_id, app_secret, url_base)
-    api = ApiClient(app_id, app_secret, url_base, tm.get_token, tm.refresh_token)
+    session = async_get_clientsession(hass)
+
+    tm = TokenManager(app_id, app_secret, url_base, session)
+    api = ApiClient(app_id, app_secret, url_base, session, tm.get_token, tm.refresh_token)
 
     hass.data.setdefault(DOMAIN, {})
     store = Store(hass, 1, f"{DOMAIN}_presets_{entry.entry_id}")
@@ -43,7 +46,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     registry = dr.async_get(hass)
     try:
-        devices_info = await hass.async_add_executor_job(api.list_devices)
+        devices_info = await api.list_devices()
     except Exception as err:
         _LOGGER.error("Não foi possível obter a lista de dispositivos: %s", err)
         devices_info = []
@@ -90,7 +93,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         v = float(call.data["v"])
         z = float(call.data.get("z", 0.0))
         try:
-            ok = await hass.async_add_executor_job(api.set_position, device_id, h, v, z)
+            ok = await api.set_position(device_id, h, v, z)
             if not ok:
                 _LOGGER.warning("set_position retornou False para %s", device_id)
         except Exception as e:
@@ -203,7 +206,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             return
         h, v, z = coords
         try:
-            await hass.async_add_executor_job(api.set_position, device_id, h, v, z)
+            await api.set_position(device_id, h, v, z)
             dev["last_preset"] = preset
             hass.bus.async_fire(
                 EVENT_PRESET_CALLED,
