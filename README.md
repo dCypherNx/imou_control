@@ -32,11 +32,11 @@ Para cada câmera encontrada são criadas as seguintes entidades auxiliares:
 
 | Tipo    | Identificador | Função |
 |---------|---------------|--------|
-| `number` | **Horizontal (h)** e **Vertical (v)** | Guardam os valores normalizados de -1.0 a 1.0 utilizados para mover a câmera. Eles não movimentam a câmera diretamente; utilizam-se desses valores no botão "Mover" ou nos serviços. |
-| `text`   | **Nome do preset** | Campo livre para informar o nome de um *preset* antes de pressionar o botão "Salvar preset". |
-| `button` | **Mover** | Chama a API `set_position` usando os valores atuais dos eixos `h`, `v` (e `z`, se definido). |
-| `button` | **Salvar preset** | Salva localmente um *preset* com o nome definido na entidade de texto e os valores atuais de `h`, `v` e `z`. |
-| `select` | **Presets** | Lista os *presets* salvos para a câmera. Selecionar uma opção chama automaticamente o serviço `call_preset`. |
+| `number` | **Movimento - Eixo Horizontal (h)** e **Movimento - Eixo Vertical (v)** | Guardam os valores normalizados de -1.0 a 1.0 utilizados para mover a câmera. Eles não movimentam a câmera diretamente; utilizam-se desses valores no botão "Movimento - Mover Câmera" ou nos serviços. |
+| `text`   | **Predefinição - Nome** | Campo livre para informar o nome de um *preset* antes de pressionar o botão "Predefinição - Salvar Posição da Câmera". |
+| `button` | **Movimento - Mover Câmera** | Chama a API `set_position` usando os valores atuais dos eixos `h`, `v` (e `z`, se definido). |
+| `button` | **Predefinição - Salvar Posição da Câmera** | Salva localmente um *preset* com o nome definido na entidade de texto e os valores atuais de `h`, `v` e `z`. |
+| `select` | **Predefinição - Selecionar** | Lista os *presets* salvos para a câmera. Selecionar uma opção chama automaticamente o serviço `call_preset`. |
 
 Os *presets* são persistidos em armazenamento local (`.storage`) do Home Assistant. Ao adicionar, renomear ou remover *presets*, o seletor é atualizado automaticamente.
 
@@ -57,7 +57,7 @@ Registra um *preset* informando explicitamente os valores `h`, `v` e `z`.
 ### `imou_control.save_preset`
 Salva um *preset* utilizando os valores atualmente armazenados nas entidades `number` (`h`, `v`) e `z` (quando disponível).
 
-Pode ser acionado pelo botão "Salvar preset" ou manualmente via serviço. Caso o *preset* já exista, ele é sobrescrito.
+Pode ser acionado pelo botão "Predefinição - Salvar Posição da Câmera" ou manualmente via serviço. Caso o *preset* já exista, ele é sobrescrito.
 
 ### `imou_control.call_preset`
 Move a câmera para o *preset* informado. Se o *preset* já estiver ativo, a chamada é ignorada para evitar movimentações desnecessárias.

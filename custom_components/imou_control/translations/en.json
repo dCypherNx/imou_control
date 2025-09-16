@@ -1,18 +1,18 @@
 {
   "entity": {
     "button": {
-      "move": {"name": "3 Move"},
-      "save_preset": {"name": "5 Save Preset"}
+      "move": {"name": "Movement - Move Camera"},
+      "save_preset": {"name": "Preset - Save Camera Position"}
     },
     "number": {
-      "horizontal": {"name": "1 Horizontal"},
-      "vertical": {"name": "2 Vertical"}
+      "horizontal": {"name": "Movement - Horizontal Axis"},
+      "vertical": {"name": "Movement - Vertical Axis"}
     },
     "select": {
-      "presets": {"name": "6 Presets"}
+      "presets": {"name": "Preset - Select"}
     },
     "text": {
-      "preset_name": {"name": "4 Preset Name"}
+      "preset_name": {"name": "Preset - Name"}
     }
   }
 }
