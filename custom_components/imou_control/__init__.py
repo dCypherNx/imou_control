@@ -17,6 +17,7 @@ from .const import (
 )
 from .token_manager import TokenManager
 from .api import ApiClient
+from .usage import ApiUsageTracker
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,8 +31,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     session = async_get_clientsession(hass)
 
-    tm = TokenManager(app_id, app_secret, url_base, session)
-    api = ApiClient(app_id, app_secret, url_base, session, tm.get_token, tm.refresh_token)
+    usage_store = Store(hass, 1, f"{DOMAIN}_usage_{entry.entry_id}")
+    usage = ApiUsageTracker(usage_store)
+    await usage.async_load()
+
+    tm = TokenManager(app_id, app_secret, url_base, session, usage=usage)
+    api = ApiClient(
+        app_id,
+        app_secret,
+        url_base,
+        session,
+        tm.get_token,
+        tm.refresh_token,
+        usage=usage,
+    )
 
     hass.data.setdefault(DOMAIN, {})
     store = Store(hass, 1, f"{DOMAIN}_presets_{entry.entry_id}")
@@ -42,6 +55,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "devices": {},
         "devices_by_name": {},
         "store": store,
+        "usage": usage,
     }
 
     registry = dr.async_get(hass)
@@ -76,7 +90,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             {did: dev["presets"] for did, dev in data_entry["devices"].items()}
         )
 
-    await hass.config_entries.async_forward_entry_setups(entry, ["number", "select", "button", "text"])
+    await hass.config_entries.async_forward_entry_setups(
+        entry,
+        ["number", "select", "button", "text", "sensor"],
+    )
 
     def resolve_device_id(device: str) -> str | None:
         if device in data_entry["devices"]:
