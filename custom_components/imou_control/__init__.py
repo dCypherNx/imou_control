@@ -84,6 +84,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return data_entry["devices_by_name"].get(device)
 
     async def srv_set_position(call: ServiceCall):
+        """Handle the ``imou_control.set_position`` service.
+
+        Parameters:
+            call: Service call providing ``device``, ``h``, ``v`` and optional ``z`` values.
+
+        Example:
+            ```yaml
+            service: imou_control.set_position
+            data:
+              device: imou_living_room
+              h: 0.0
+              v: 0.0
+              z: 0.0
+            ```
+        """
         device = call.data["device"]
         device_id = resolve_device_id(device)
         if not device_id:
@@ -115,6 +130,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     async def srv_define_preset(call: ServiceCall):
+        """Store PTZ coordinates for the ``imou_control.define_preset`` service.
+
+        Parameters:
+            call: Service call containing ``device``, ``preset``, ``h``, ``v`` and optional ``z``.
+
+        Example:
+            ```yaml
+            service: imou_control.define_preset
+            data:
+              device: imou_living_room
+              preset: entrada
+              h: 0.1
+              v: -0.2
+              z: 0.0
+            ```
+        """
         device = call.data["device"]
         device_id = resolve_device_id(device)
         if not device_id:
@@ -151,6 +182,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     async def srv_save_preset(call: ServiceCall):
+        """Persist the current PTZ coordinates via ``imou_control.save_preset``.
+
+        Parameters:
+            call: Service call with ``device`` and ``preset`` identifiers.
+
+        Example:
+            ```yaml
+            service: imou_control.save_preset
+            data:
+              device: imou_living_room
+              preset: varanda
+            ```
+        """
         device = call.data["device"]
         device_id = resolve_device_id(device)
         if not device_id:
@@ -184,6 +228,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     async def srv_call_preset(call: ServiceCall):
+        """Trigger a stored preset using ``imou_control.call_preset``.
+
+        Parameters:
+            call: Service call with ``device`` and ``preset`` names to execute.
+
+        Example:
+            ```yaml
+            service: imou_control.call_preset
+            data:
+              device: imou_living_room
+              preset: entrada
+            ```
+        """
         device = call.data["device"]
         device_id = resolve_device_id(device)
         if not device_id:
