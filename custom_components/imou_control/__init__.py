@@ -73,6 +73,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "presets": saved.get(device_id, {}),
             "last_preset": None,
             "coords": {"h": 0.0, "v": 0.0, "z": 0.0},
+            "number_entities": {},
             "select_entity": None,
             "preset_name": "",
         }
@@ -314,13 +315,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if coords is None:
             _LOGGER.warning("Preset %s não definido para %s", preset, device_id)
             return
+
+        h, v, z = coords
+
+        def _apply_coords() -> None:
+            dev["coords"].update({"h": h, "v": v, "z": z})
+            numbers = dev.get("number_entities") or {}
+            number_h = numbers.get("h")
+            number_v = numbers.get("v")
+            if number_h is not None:
+                number_h.update_from_preset(h)
+            if number_v is not None:
+                number_v.update_from_preset(v)
+
         if dev.get("last_preset") == preset:
             _LOGGER.debug("Preset %s já ativo em %s, ignorando", preset, device_id)
+            _apply_coords()
             return
-        h, v, z = coords
         try:
             await api.set_position(device_id, h, v, z)
             dev["last_preset"] = preset
+            _apply_coords()
             hass.bus.async_fire(
                 EVENT_PRESET_CALLED,
                 {"device": device_id, "preset": preset},
