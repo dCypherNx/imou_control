@@ -56,3 +56,14 @@ call_preset:
     preset:
       description: Nome do preset a ser chamado
       example: sala
+
+delete_preset:
+  name: Remover preset
+  description: Remove um preset armazenado localmente para o dispositivo.
+  fields:
+    device:
+      description: Nome ou ID do dispositivo
+      example: Camera Sala
+    preset:
+      description: Nome do preset a ser removido
+      example: sala
