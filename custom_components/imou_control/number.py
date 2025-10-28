@@ -4,7 +4,7 @@ from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN
+from .const import DOMAIN, INTEGRATION_VERSION
 
 class ImouAxisNumber(NumberEntity):
     def __init__(self, hass: HomeAssistant, device_id: str, axis: str, data: dict):
@@ -19,6 +19,7 @@ class ImouAxisNumber(NumberEntity):
             identifiers={(DOMAIN, device_id)},
             manufacturer="Imou",
             name=data["name"],
+            sw_version=INTEGRATION_VERSION,
         )
         self._attr_has_entity_name = True
         key = "horizontal" if axis == "h" else "vertical"

@@ -8,7 +8,7 @@ from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 
-from .const import DOMAIN
+from .const import DOMAIN, INTEGRATION_VERSION
 from .usage import ApiUsageTracker
 
 
@@ -34,6 +34,7 @@ class ImouApiUsageSensor(SensorEntity):
             identifiers={(DOMAIN, f"account_{self._entry_id}")},
             manufacturer="Imou",
             name="Imou Account",
+            sw_version=INTEGRATION_VERSION,
         )
 
     async def async_added_to_hass(self) -> None:
