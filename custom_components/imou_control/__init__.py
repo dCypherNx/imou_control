@@ -14,6 +14,7 @@ from .const import (
     CONF_APP_SECRET,
     CONF_URL_BASE,
     EVENT_PRESET_CALLED,
+    INTEGRATION_VERSION,
 )
 from .token_manager import TokenManager
 from .api import ApiClient
@@ -84,6 +85,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             identifiers={(DOMAIN, device_id)},
             manufacturer="Imou",
             name=name,
+            sw_version=INTEGRATION_VERSION,
         )
 
     async def _save_presets() -> None:

@@ -4,7 +4,7 @@ from homeassistant.components.text import TextEntity, TextMode
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN
+from .const import DOMAIN, INTEGRATION_VERSION
 
 
 class ImouPresetText(TextEntity):
@@ -19,6 +19,7 @@ class ImouPresetText(TextEntity):
             identifiers={(DOMAIN, self._device_id)},
             manufacturer="Imou",
             name=data["name"],
+            sw_version=INTEGRATION_VERSION,
         )
         self._attr_has_entity_name = True
         self._attr_translation_key = "preset_name"

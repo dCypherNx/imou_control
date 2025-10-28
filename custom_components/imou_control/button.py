@@ -4,7 +4,7 @@ from homeassistant.components.button import ButtonEntity
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN
+from .const import DOMAIN, INTEGRATION_VERSION
 
 
 class ImouMoveButton(ButtonEntity):
@@ -19,6 +19,7 @@ class ImouMoveButton(ButtonEntity):
             identifiers={(DOMAIN, self._device_id)},
             manufacturer="Imou",
             name=data["name"],
+            sw_version=INTEGRATION_VERSION,
         )
         self._attr_has_entity_name = True
         self._attr_translation_key = "move"
@@ -43,6 +44,7 @@ class ImouSavePresetButton(ButtonEntity):
             identifiers={(DOMAIN, self._device_id)},
             manufacturer="Imou",
             name=data["name"],
+            sw_version=INTEGRATION_VERSION,
         )
         self._attr_has_entity_name = True
         self._attr_translation_key = "save_preset"
