@@ -30,6 +30,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     app_secret = entry.data[CONF_APP_SECRET]
     url_base   = entry.data[CONF_URL_BASE]
 
+    _LOGGER.debug("Iniciando setup da entrada %s do imou_control", entry.entry_id)
     session = async_get_clientsession(hass)
 
     usage_store = Store(hass, 1, f"{DOMAIN}_usage_{entry.entry_id}")
@@ -61,14 +62,32 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     registry = dr.async_get(hass)
     try:
+        _LOGGER.debug("Buscando dispositivos Imou para a entrada %s", entry.entry_id)
         devices_info = await api.list_devices()
     except Exception as err:
         _LOGGER.error("Não foi possível obter a lista de dispositivos: %s", err)
         devices_info = []
+    _LOGGER.debug(
+        "Descoberta de dispositivos concluída para %s: %d dispositivos",
+        entry.entry_id,
+        len(devices_info),
+    )
+
+    if not devices_info:
+        _LOGGER.warning(
+            "Nenhum dispositivo retornado pela API da Imou para a entrada %s. "
+            "Verifique app_id/app_secret/url_base e se a conta possui câmeras vinculadas.",
+            entry.entry_id,
+        )
     for info in devices_info:
         device_id = info.get("deviceId")
         raw_name = info.get("deviceName") or device_id
         name = f"Imou {raw_name}"
+        _LOGGER.debug(
+            "Registrando dispositivo descoberto: device_id=%s, nome=%s",
+            device_id,
+            raw_name,
+        )
         data_entry["devices"][device_id] = {
             "name": name,
             "presets": saved.get(device_id, {}),

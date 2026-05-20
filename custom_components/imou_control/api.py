@@ -120,6 +120,12 @@ class ApiClient:
         data = await self._do_call(path, params, include_token=include_token)
         result = data.get("result") or {}
         code = str(result.get("code", "0"))
+        _LOGGER.debug(
+            "Resposta da API em %s: code=%s, msg=%s",
+            path,
+            code,
+            result.get("msg"),
+        )
         if code == "0" or not include_token:
             return data
 
@@ -180,6 +186,12 @@ class ApiClient:
             or result.get("devices")
             or result.get("list")
             or []
+        )
+        _LOGGER.debug(
+            "list_devices: code=%s, msg=%s, quantidade=%d",
+            result.get("code"),
+            result.get("msg"),
+            len(devices) if isinstance(devices, list) else 0,
         )
 
         return devices if isinstance(devices, list) else []
