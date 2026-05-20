@@ -9,7 +9,7 @@ CONF_URL_BASE = "url_base"
 # Endpoints padrão da Open API (relativos ao url_base)
 TOKEN_ENDPOINT = "/openapi/accessToken"
 PTZ_LOCATION_ENDPOINT = "/openapi/controlLocationPTZ"
-DEVICE_LIST_ENDPOINT = "/openapi/deviceOpenList"
+DEVICE_LIST_ENDPOINT = "/openapi/deviceBaseList"
 
 # Nome do evento disparado quando um preset é chamado
 EVENT_PRESET_CALLED = "imou_control_preset_called"
