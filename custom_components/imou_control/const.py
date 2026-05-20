@@ -1,5 +1,5 @@
 DOMAIN = "imou_control"
-INTEGRATION_VERSION = "1.1.0"
+INTEGRATION_VERSION = "1.2.0"
 
 # Credenciais configuradas no config_flow
 CONF_APP_ID = "app_id"
