@@ -163,6 +163,18 @@ class ApiClient:
             "z": float(z),
         }
         data = await self._call_with_retry(PTZ_LOCATION_ENDPOINT, params, include_token=True)
+        result = data.get("result") or {}
+        _LOGGER.debug(
+            "Retorno controlLocationPTZ para %s: %s",
+            device_id,
+            {
+                "result": {
+                    "msg": result.get("msg"),
+                    "code": result.get("code"),
+                },
+                "id": data.get("id"),
+            },
+        )
         # sucesso já garantido por _call_with_retry (code == "0")
         return True
 
