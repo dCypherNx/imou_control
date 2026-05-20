@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import logging
+
 from homeassistant.components.button import ButtonEntity
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN, INTEGRATION_VERSION
+
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class ImouMoveButton(ButtonEntity):
@@ -28,8 +33,22 @@ class ImouMoveButton(ButtonEntity):
         h = self._data["coords"]["h"]
         v = self._data["coords"]["v"]
         z = self._data["coords"].get("z", 0.0)
-        await self._hass.async_add_executor_job(
-            self._api.set_position, self._device_id, h, v, z
+
+        _LOGGER.debug(
+            "Solicitando movimentação PTZ para %s (horizontal=%.2f, vertical=%.2f, zoom=%.2f)",
+            self._device_id,
+            h,
+            v,
+            z,
+        )
+
+        await self._api.set_position(self._device_id, h, v, z)
+
+        _LOGGER.debug(
+            "Movimentação PTZ solicitada com sucesso para %s (horizontal=%.2f, vertical=%.2f)",
+            self._device_id,
+            h,
+            v,
         )
 
 
